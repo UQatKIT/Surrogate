@@ -65,6 +65,8 @@ class SurrogateControl(ub.Model):
         self._training_data_ready_for_access.set()
         self._surrogate_model_ready_for_use.set()
         self._surrogate_model_ready_for_update.set()
+        self._queueing_lock = threading.Lock()
+        self._surrogate_evaluation_lock = threading.Lock()
 
         self._checkpoint_save_path = settings.checkpoint_save_path
         self._checkpoint_save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,7 +94,8 @@ class SurrogateControl(ub.Model):
             result = self._simulation_model(parameters, config)
             variance = 0
             result_list = result + [[variance]]
-            self._queue_training_data(parameters, result)
+            with self._queueing_lock:
+                self._queue_training_data(parameters, result)
             return result_list
 
         parameter_array = self._convert_to_array(parameters)
@@ -101,9 +104,10 @@ class SurrogateControl(ub.Model):
         self._surrogate_model_ready_for_use.clear()
         print("Call: Surrogate blocked")
         print("Call: Evaluate surrogate model")
-        result, variance = self._surrogate_model.predict_and_estimate_variance(
-            parameter_array, is_relative=self._variance_is_relative
-        )
+        with self._surrogate_evaluation_lock:
+            result, variance = self._surrogate_model.predict_and_estimate_variance(
+                parameter_array, is_relative=self._variance_is_relative
+            )
         result_list = [result.tolist(), variance.tolist()]
         self._surrogate_model_ready_for_use.set()
         print("Call: Surrogate freed")
@@ -113,7 +117,9 @@ class SurrogateControl(ub.Model):
             result = self._simulation_model(parameters, config)
             variance = 0
             result_list = result + [[variance]]
-            self._queue_training_data(parameters, result)
+            with self._queueing_lock:
+                self._queue_training_data(parameters, result)
+
         return result_list
 
     # ----------------------------------------------------------------------------------------------
