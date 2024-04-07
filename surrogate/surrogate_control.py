@@ -162,26 +162,6 @@ class SurrogateControl(ub.Model):
         )
 
     # ----------------------------------------------------------------------------------------------
-    def _save_checkpoint(self):
-        print("Checkpoint: Wait for surrogate")
-        self._surrogate_model_ready_for_use.wait()
-        self._surrogate_model_ready_for_use.clear()
-        print("Checkpoint: Surrogate blocked")
-        input_data, output_data, hyperparameters = self._surrogate_model.return_checkpoint_data()
-        self._surrogate_model_ready_for_use.set()
-        print("Checkpoint: Surrogate freed")
-        checkpoint = Checkpoint(
-            num_completed_updates=self._num_surrogate_model_updates,
-            next_update_iter=self._next_surrogate_model_update_iter,
-            input_data=input_data,
-            output_data=output_data,
-            hyperparameters=hyperparameters,
-        )
-        print("Checkpoint: Save checkpoint")
-        with open(self._checkpoint_save_path, "wb") as checkpoint_file:
-            pickle.dump(checkpoint, checkpoint_file)
-
-    # ----------------------------------------------------------------------------------------------
     @staticmethod
     def _convert_to_array(input_list):
         flattened_list = [value for sublist in input_list for value in sublist]
@@ -223,3 +203,23 @@ class SurrogateControl(ub.Model):
             else:
                 self._training_data_ready_for_access.set()
                 print("Update: Training data freed")
+
+    # ----------------------------------------------------------------------------------------------
+    def _save_checkpoint(self):
+        print("Checkpoint: Wait for surrogate")
+        self._surrogate_model_ready_for_use.wait()
+        self._surrogate_model_ready_for_use.clear()
+        print("Checkpoint: Surrogate blocked")
+        input_data, output_data, hyperparameters = self._surrogate_model.return_checkpoint_data()
+        self._surrogate_model_ready_for_use.set()
+        print("Checkpoint: Surrogate freed")
+        checkpoint = Checkpoint(
+            num_completed_updates=self._num_surrogate_model_updates,
+            next_update_iter=self._next_surrogate_model_update_iter,
+            input_data=input_data,
+            output_data=output_data,
+            hyperparameters=hyperparameters,
+        )
+        print("Checkpoint: Save checkpoint")
+        with open(self._checkpoint_save_path, "wb") as checkpoint_file:
+            pickle.dump(checkpoint, checkpoint_file)
