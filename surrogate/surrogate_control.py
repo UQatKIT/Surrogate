@@ -91,35 +91,22 @@ class SurrogateControl(ub.Model):
     def __call__(self, parameters, config):
         if self._num_generated_training_points < self._minimum_num_training_points:
             print("Call: Evaluate simulation model")
-            result = self._simulation_model(parameters, config)
+            simulation_result = self._simulation_model(parameters, config)
             variance = 0
-            result_list = result + [[variance]]
-            with self._queueing_lock:
-                self._queue_training_data(parameters, result)
+            result_list = simulation_result + [[variance]]
+            self._queue_training_data(parameters, simulation_result)
             return result_list
+        
+        surrogate_result, variance = self._call_surrogate(parameters)
 
-        parameter_array = self._convert_to_array(parameters)
-        print("Call: Wait for surrogate")
-        self._surrogate_model_ready_for_use.wait()
-        self._surrogate_model_ready_for_use.clear()
-        print("Call: Surrogate blocked")
-        print("Call: Evaluate surrogate model")
-        with self._surrogate_evaluation_lock:
-            result, variance = self._surrogate_model.predict_and_estimate_variance(
-                parameter_array, is_relative=self._variance_is_relative
-            )
-        result_list = [result.tolist(), variance.tolist()]
-        self._surrogate_model_ready_for_use.set()
-        print("Call: Surrogate freed")
-
-        if np.max(variance) > self._variance_threshold:
+        if np.max(variance) <= self._variance_threshold:
+            result_list = [surrogate_result.tolist(), variance.tolist()]
+        else:
             print("Call: Evaluate simulation model")
-            result = self._simulation_model(parameters, config)
+            simulation_result = self._simulation_model(parameters, config)
             variance = 0
-            result_list = result + [[variance]]
-            with self._queueing_lock:
-                self._queue_training_data(parameters, result)
-
+            result_list = simulation_result + [[variance]]
+            self._queue_training_data(parameters, simulation_result)
         return result_list
 
     # ----------------------------------------------------------------------------------------------
@@ -128,22 +115,40 @@ class SurrogateControl(ub.Model):
         update_thread = threading.Thread(target=self._update_surrogate_model, daemon=True)
         update_thread.start()
         return update_thread
+    
+    # ----------------------------------------------------------------------------------------------
+    def _call_surrogate(self, parameters):
+        with self._surrogate_evaluation_lock:
+            parameter_array = self._convert_to_array(parameters)
+            print("Call: Wait for surrogate")
+            self._surrogate_model_ready_for_use.wait()
+            self._surrogate_model_ready_for_use.clear()
+            print("Call: Surrogate blocked")
+            print("Call: Evaluate surrogate model")
+            result, variance = self._surrogate_model.predict_and_estimate_variance(
+                parameter_array, is_relative=self._variance_is_relative
+            )
+            self._surrogate_model_ready_for_use.set()
+            print("Call: Surrogate freed")
+
+        return result, variance
 
     # ----------------------------------------------------------------------------------------------
     def _queue_training_data(self, parameters, result):
-        input_array = self._convert_to_array(parameters)
-        output_array = self._convert_to_array(result)
+        with self._queueing_lock:
+            input_array = self._convert_to_array(parameters)
+            output_array = self._convert_to_array(result)
 
-        print("Queueing: Wait for training data")
-        self._training_data_ready_for_access.wait()
-        self._training_data_ready_for_access.clear()
-        print("Queueing: Training data blocked")
-        print("Queueing: Queue data")
-        self._input_training_data.append(input_array)
-        self._output_training_data.append(output_array)
-        self._training_data_ready_for_access.set()
-        print("Queueing: Training data freed")
-        self._num_generated_training_points += 1
+            print("Queueing: Wait for training data")
+            self._training_data_ready_for_access.wait()
+            self._training_data_ready_for_access.clear()
+            print("Queueing: Training data blocked")
+            print("Queueing: Queue data")
+            self._input_training_data.append(input_array)
+            self._output_training_data.append(output_array)
+            self._training_data_ready_for_access.set()
+            print("Queueing: Training data freed")
+            self._num_generated_training_points += 1
 
     # ----------------------------------------------------------------------------------------------
     def _load_checkpoint(self, checkpoint_load_path):
