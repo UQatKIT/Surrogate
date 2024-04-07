@@ -79,7 +79,8 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def predict_and_estimate_variance(self, parameters, is_relative):
-        mean, variance = self._gp_model.predict(parameters, return_std=True)
+        mean, standard_deviation = self._gp_model.predict(parameters, return_std=True)
+        variance = standard_deviation**2
 
         if self._perform_log_transform:
             mean = np.log(mean)
