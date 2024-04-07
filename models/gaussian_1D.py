@@ -3,7 +3,7 @@ import umbridge
 class Gaussian1D(umbridge.Model):
 
     def __init__(self):
-        super().__init__("posterior")
+        super().__init__("simulation_model")
         self._mean = 0
         self._std = 1
 
@@ -24,4 +24,4 @@ class Gaussian1D(umbridge.Model):
 
 model = Gaussian1D()
 
-umbridge.serve_models([model], 4242)
+umbridge.serve_models([model], 4244)

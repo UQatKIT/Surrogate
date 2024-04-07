@@ -1,0 +1,40 @@
+# =============================================== Ruff =============================================
+[tool.ruff]
+line-length = 100
+src = ["src"]
+select = ["E", "F", "UP", "D",]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+#---------------------------------------------------------------------------------------------------
+[tool.ruff.pydocstyle]
+convention = "google"
+
+
+# =============================================== Black ============================================
+[tool.black]
+line-length = 100
