@@ -30,11 +30,15 @@ class BaseSurrogateModel:
         self._perform_log_transform = settings.perform_log_transform
 
     @abstractmethod
-    def update(self, input_data, output_data):
+    def update_training_data(self, input_data, output_data):
         pass
 
     @abstractmethod
-    def update_from_checkpoint(self, input_data, output_data, hyperparameters):
+    def fit(self):
+        pass
+
+    @abstractmethod
+    def update_and_fit_from_checkpoint(self, input_data, output_data, hyperparameters):
         pass
 
     @abstractmethod
@@ -54,7 +58,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
         self._gp_model = self._init_gp_model(settings)
 
     # ----------------------------------------------------------------------------------------------
-    def update(self, input_data, output_data):
+    def update_training_data(self, input_data, output_data):
         if self._perform_log_transform:
             output_data = np.exp(output_data)
 
@@ -64,13 +68,20 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
         else:
             self._training_input = np.append(self._training_input, input_data, axis=0)
             self._training_output = np.append(self._training_output, output_data, axis=0)
-        self._fit_gp_model()
 
     # ----------------------------------------------------------------------------------------------
-    def update_from_checkpoint(self, input_data, output_data, hyperparameters):
+    def fit(self):
+        self._gp_model.fit(self._training_input, self._training_output)
+        optimized_kernel = self._gp_model.kernel_
+        hyperparameters = optimized_kernel.get_params()
+        self._gp_model.kernel.set_params(**hyperparameters)
+
+    # ----------------------------------------------------------------------------------------------
+    def update_and_fit_from_checkpoint(self, input_data, output_data, hyperparameters):
         self._training_input = input_data
         self._training_output = output_data
         self._gp_model.kernel.set_params(**hyperparameters)
+        self._gp_model.fit(self._training_input, self._training_output)
 
     # ----------------------------------------------------------------------------------------------
     def return_checkpoint_data(self):
@@ -106,8 +117,9 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
         return gp_model
 
     # ----------------------------------------------------------------------------------------------
-    def _fit_gp_model(self):
-        self._gp_model.fit(self._training_input, self._training_output)
-        optimized_kernel = self._gp_model.kernel_
-        hyperparameters = optimized_kernel.get_params()
-        self._gp_model.kernel.set_params(**hyperparameters)
+    @property
+    def training_set_size(self):
+        if self._training_input is None:
+            return 0
+        else:
+            return self._training_input.shape[0]
