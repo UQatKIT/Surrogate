@@ -207,4 +207,3 @@ pyrightconfig.json
 .VSCodeCounter/
 .vscode/
 !/surrogate/
-!/models/
