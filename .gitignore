@@ -202,8 +202,9 @@ pyrightconfig.json
 *.pdf
 *.pkl
 *.ipynb
+*.log
 
 /*/
 .VSCodeCounter/
 .vscode/
-!/surrogate/
+!/src/

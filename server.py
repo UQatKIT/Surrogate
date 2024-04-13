@@ -3,7 +3,7 @@ import importlib
 
 import umbridge as ub
 
-import surrogate.surrogate_control as surrogate_control
+import src.surrogate.surrogate_control as surrogate_control
 
 
 # ==================================================================================================
@@ -34,10 +34,10 @@ def main():
     settings_module = process_cli_arguments()
     settings_module = importlib.import_module(settings_module)
 
-    print("\n=========== Start Umbridge Surrogate ===========\n")
     model = settings_module.surrogate_model_type(settings_module.surrogate_model_settings)
     control = surrogate_control.SurrogateControl(
         settings_module.surrogate_control_settings,
+        settings_module.logger_settings,
         model,
         settings_module.simulation_model,
     )
