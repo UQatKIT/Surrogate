@@ -1,6 +1,4 @@
-import logging
 import pickle
-import sys
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -8,7 +6,8 @@ from pathlib import Path
 
 import numpy as np
 import umbridge as ub
-from scipy.stats import qmc
+
+from . import utilities as util
 
 
 # ==================================================================================================
@@ -19,20 +18,9 @@ class ControlSettings:
     minimum_num_training_points: int
     variance_threshold: float
     update_interval_rule: Callable
-    num_offline_training_points: int
-    offline_model_config: dict
-    lhs_bounds: list
-    lhs_seed: list
     checkpoint_load_file: Path = None
     checkpoint_save_path: Path = None
     overwrite_checkpoint: bool = True
-
-
-@dataclass
-class LoggerSettings:
-    do_printing: bool = True
-    logfile_path: str = None
-    write_mode: str = "w"
 
 
 @dataclass
@@ -73,7 +61,7 @@ class SurrogateControl(ub.Model):
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
         self._input_sizes = simulation_model.get_input_sizes()
-        self._output_sizes = [np.prod(simulation_model.get_output_sizes()), 1]
+        self._output_sizes = [np.prod(simulation_model.get_output_sizes()), 1, 1]
 
         self._num_saved_checkpoints = 0
         self._num_generated_training_points = 0
@@ -91,15 +79,6 @@ class SurrogateControl(ub.Model):
         self._overwrite_checkpoint = control_settings.overwrite_checkpoint
         if control_settings.checkpoint_load_file is not None:
             self._load_checkpoint(control_settings.checkpoint_load_file)
-        if control_settings.num_offline_training_points is not None:
-            self._logger.info("Perform offline training...")
-            self._perform_offline_training(
-                control_settings.num_offline_training_points,
-                control_settings.lhs_bounds,
-                control_settings.lhs_seed,
-                control_settings.offline_model_config
-            )
-            self._logger.info("Offline training completed\n")
 
         self._surrogate_update_thread = self._init_surrogate_model_update_thread()
 
@@ -145,7 +124,7 @@ class SurrogateControl(ub.Model):
             self._num_generated_training_points,
         )
         self._logger.log_control_call_info(call_info)
-        return result_list
+        return result_list + [[int(surrogate_used)]]
 
     # ----------------------------------------------------------------------------------------------
     def update_surrogate_model_daemon(self):
@@ -157,7 +136,7 @@ class SurrogateControl(ub.Model):
                 new_fit = True
                 checkpoint_id = self._get_checkpoint_id()
                 self._retrain_surrogate()
-                scale, correlation_length = self._surrogate_model.get_scale_and_correlation_length()
+                scale, correlation_length = self._surrogate_model.scale_and_correlation_length
                 self._surrogate_model.save_checkpoint(checkpoint_id)
                 self._save_checkpoint(checkpoint_id)
                 self._num_saved_checkpoints += 1
@@ -183,7 +162,7 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _call_surrogate(self, parameters):
         with self._surrogate_lock:
-            parameter_array = self._convert_nested_list_to_array(parameters)
+            parameter_array = util.convert_nested_list_to_array(parameters)
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
 
         return result, variance
@@ -202,8 +181,8 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _queue_training_data(self, parameters, result):
         with self._data_lock:
-            input_array = self._convert_nested_list_to_array(parameters)
-            output_array = self._convert_nested_list_to_array(result)
+            input_array = util.convert_nested_list_to_array(parameters)
+            output_array = util.convert_nested_list_to_array(result)
             self._input_training_data.append(input_array)
             self._output_training_data.append(output_array)
 
@@ -222,26 +201,6 @@ class SurrogateControl(ub.Model):
             self._training_data_available.clear()
 
     # ----------------------------------------------------------------------------------------------
-    def _perform_offline_training(self, num_training_points, domain_bounds, seed, config):
-        dim = len(domain_bounds)
-        lower_bounds = [bounds[0] for bounds in domain_bounds]
-        upper_bounds = [bounds[1] for bounds in domain_bounds]
-        lhs_sampler = qmc.LatinHypercube(d=dim, seed=seed)
-        lhs_samples = lhs_sampler.random(n=num_training_points)
-        lhs_samples = qmc.scale(lhs_samples, lower_bounds, upper_bounds)
-
-        training_output = []
-        for sample_point in lhs_samples.tolist():
-            simulation_result = self._simulation_model([sample_point], config)
-            training_output.append(simulation_result)
-        training_output = self._convert_nested_list_to_array(training_output)
-
-        self._surrogate_model.update_training_data(lhs_samples, training_output)
-        self._surrogate_model.fit()
-        self._surrogate_model.save_checkpoint("offline")
-
-
-    # ----------------------------------------------------------------------------------------------
     def _load_checkpoint(self, checkpoint_load_file):
         with open(checkpoint_load_file, "rb") as checkpoint_file:
             checkpoint = pickle.load(checkpoint_file)
@@ -251,22 +210,13 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _save_checkpoint(self, checkpoint_id):
-        if self._checkpoint_save_path is not None:
-            if not self._checkpoint_save_path.is_dir():
-                self._checkpoint_save_path.mkdir(parents=True, exist_ok=True)
-
-            checkpoint = Checkpoint(
-                num_completed_updates=self._num_surrogate_model_updates,
-                next_update_iter=self._next_surrogate_model_update_iter,
-            )
-            if self._overwrite_checkpoint:
-                checkpoint_file = self._checkpoint_save_path / Path("control_checkpoint.pkl")
-            else:
-                checkpoint_file = self._checkpoint_save_path / Path(
-                    f"control_checkpoint_{checkpoint_id}.pkl"
-                )
-            with open(checkpoint_file, "wb") as cp_file:
-                pickle.dump(checkpoint, cp_file)
+        checkpoint = Checkpoint(
+            num_completed_updates=self._num_surrogate_model_updates,
+            next_update_iter=self._next_surrogate_model_update_iter,
+        )
+        util.save_checkpoint_pickle(
+            self._checkpoint_save_path, "control_checkpoint", checkpoint, checkpoint_id
+        )
 
     # ----------------------------------------------------------------------------------------------
     def _get_checkpoint_id(self):
@@ -276,41 +226,13 @@ class SurrogateControl(ub.Model):
             checkpoint_id = self._num_saved_checkpoints
         return checkpoint_id
 
-    # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def _convert_nested_list_to_array(input_list):
-        flattened_list = [value for sublist in input_list for value in sublist]
-        array = np.array(flattened_list).reshape(-1, 1)
-        return array
-
 
 # ==================================================================================================
-class SurrogateLogger:
+class SurrogateLogger(util.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings) -> None:
-        self._logfile_path = logger_settings.logfile_path
-        self._pylogger = logging.getLogger(__name__)
-        self._pylogger.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(message)s")
-
-        if not self._pylogger.hasHandlers():
-            if logger_settings.do_printing:
-                console_handler = logging.StreamHandler(sys.stdout)
-                console_handler.setFormatter
-                console_handler.setLevel(logging.INFO)
-                console_handler.setFormatter(formatter)
-                self._pylogger.addHandler(console_handler)
-
-            if self._logfile_path is not None:
-                self._logfile_path.parent.mkdir(exist_ok=True, parents=True)
-                file_handler = logging.FileHandler(
-                    self._logfile_path, mode=logger_settings.write_mode
-                )
-                file_handler.setFormatter(formatter)
-                file_handler.setLevel(logging.INFO)
-                self._pylogger.addHandler(file_handler)
-
+        super().__init__(logger_settings)
         self.print_header()
 
     # ----------------------------------------------------------------------------------------------
@@ -369,11 +291,3 @@ class SurrogateLogger:
             f"Corr: {update_info.correlation_length:<12.3e}"
         )
         self._pylogger.info(output_str)
-
-    # ----------------------------------------------------------------------------------------------
-    def info(self, message: str) -> None:
-        self._pylogger.info(message)
-
-    # ----------------------------------------------------------------------------------------------
-    def exception(self, message: str) -> None:
-        self._pylogger.exception(message)

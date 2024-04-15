@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 
+from . import utilities as util
+
 
 # ==================================================================================================
 @dataclass
@@ -15,8 +17,11 @@ class BaseSettings:
     perform_log_transform: bool
     variance_is_relative: bool
     variance_reference: float
-    variance_underflow_threshold: float
+    value_range_underflow_threshold: float
     log_mean_underflow_value: float
+    mean_underflow_value: float
+    checkpoint_load_file: Path
+    checkpoint_save_path: Path
 
 
 @dataclass
@@ -27,8 +32,6 @@ class SKLearnGPSettings(BaseSettings):
     num_optimizer_restarts: int
     normalize_output: bool
     init_seed: int
-    checkpoint_load_file: Path
-    checkpoint_save_path: Path
 
 
 @dataclass
@@ -51,11 +54,9 @@ class BaseSurrogateModel:
         self._perform_log_transform = settings.perform_log_transform
         self._variance_reference = settings.variance_reference
         self._variance_is_relative = settings.variance_is_relative
-        self._variance_underflow_threshold = settings.variance_underflow_threshold
+        self._value_range_underflow_threshold = settings.value_range_underflow_threshold
         self._log_mean_underflow_value = settings.log_mean_underflow_value
-
-        if settings.checkpoint_load_file is not None:
-            self.load_checkpoint(settings.checkpoint_load_file)
+        self._mean_underflow_value = settings.mean_underflow_value
         self._checkpoint_save_path = settings.checkpoint_save_path
 
     @abstractmethod
@@ -78,6 +79,28 @@ class BaseSurrogateModel:
     def save_checkpoint(self, checkpoint_save_path):
         pass
 
+    @property
+    @abstractmethod
+    def training_data(self):
+        pass
+
+    @property
+    @abstractmethod
+    def scale_and_correlation_length(self):
+        pass
+
+    @property
+    def variance_is_relative(self):
+        return self._variance_is_relative
+    
+    @property
+    def variance_reference(self):
+        return self._variance_reference
+    
+    @property
+    def output_data_range(self):
+        return self._max_output_data - self._min_output_data
+
 
 # ==================================================================================================
 class SKLearnGPSurrogateModel(BaseSurrogateModel):
@@ -86,6 +109,8 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     def __init__(self, settings):
         super().__init__(settings)
         self._gp_model = self._init_gp_model(settings)
+        if settings.checkpoint_load_file is not None:
+            self.load_checkpoint(settings.checkpoint_load_file)
 
     # ----------------------------------------------------------------------------------------------
     def update_training_data(self, input_data, output_data):
@@ -115,10 +140,10 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
         variance = standard_deviation**2
 
         if self._perform_log_transform:
-            if mean <= 0:
-                mean = self._log_mean_underflow_value
-            else:
-                mean = np.log(mean)
+            mean = np.where(mean <= self._mean_underflow_value, self._mean_underflow_value, mean)
+            mean = np.where(
+                mean == self._mean_underflow_value, self._log_mean_underflow_value, np.log(mean)
+            )
 
         if self._variance_is_relative:
             if self._variance_reference is not None:
@@ -126,7 +151,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             else:
                 reference_variance = np.maximum(
                     (self._max_output_data - self._min_output_data) ** 2,
-                    self._variance_underflow_threshold,
+                    self._value_range_underflow_threshold,
                 )
             variance /= reference_variance
 
@@ -138,35 +163,21 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             checkpoint = pickle.load(checkpoint_file)
             self._training_input = checkpoint.input_data
             self._training_output = checkpoint.output_data
+            self._min_output_data = np.min(self._training_output, axis=0)
+            self._max_output_data = np.max(self._training_output, axis=0)
             self._gp_model.kernel.set_params(**checkpoint.hyperparameters)
             self._gp_model.fit(self._training_input, self._training_output)
 
     # ----------------------------------------------------------------------------------------------
     def save_checkpoint(self, checkpoint_id):
-        if self._checkpoint_save_path is not None:
-            if not self._checkpoint_save_path.is_dir():
-                self._checkpoint_save_path.mkdir(parents=True, exist_ok=True)
-
-            if checkpoint_id is not None:
-                checkpoint_file = self._checkpoint_save_path / Path(
-                    f"surrogate_checkpoint_{checkpoint_id}.pkl"
-                )
-            else:
-                checkpoint_file = self._checkpoint_save_path / Path("surrogate_checkpoint.pkl")
-
-            checkpoint = SKLearnGPCheckpoint(
-                input_data=self._training_input,
-                output_data=self._training_output,
-                hyperparameters=self._gp_model.kernel.get_params(),
-            )
-            with open(checkpoint_file, "wb") as cp_file:
-                pickle.dump(checkpoint, cp_file)
-
-    # ----------------------------------------------------------------------------------------------
-    def get_scale_and_correlation_length(self):
-        scale = self._gp_model.kernel.k1.constant_value
-        correlation_length = self._gp_model.kernel.k2.length_scale
-        return scale, correlation_length
+        checkpoint = SKLearnGPCheckpoint(
+            input_data=self._training_input,
+            output_data=self._training_output,
+            hyperparameters=self._gp_model.kernel.get_params(),
+        )
+        util.save_checkpoint_pickle(
+            self._checkpoint_save_path, "surrogate_checkpoint", checkpoint, checkpoint_id
+        )
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
@@ -183,3 +194,15 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             random_state=settings.init_seed,
         )
         return gp_model
+    
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def training_data(self):
+        return self._training_input, self._training_output
+
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def scale_and_correlation_length(self):
+        scale = self._gp_model.kernel.k1.constant_value
+        correlation_length = self._gp_model.kernel.k2.length_scale
+        return scale, correlation_length
