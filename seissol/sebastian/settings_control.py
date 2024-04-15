@@ -4,7 +4,7 @@ import umbridge as ub
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
 import src.surrogate.surrogate_model as surrogate_model
-import src.surrogate.offline_training as offline_training
+import src.surrogate.surrogate_control as surrogate_control
 import src.surrogate.utilities as util
 
 
@@ -27,23 +27,24 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     log_mean_underflow_value=-1000,
     mean_underflow_value=1e-6,
     init_seed=0,
-    checkpoint_load_file=None,
-    checkpoint_save_path=Path("results_example_gauss_1D"),
+    checkpoint_load_file="results_sebastian/surrogate_checkpoint_pretraining.pkl",
+    checkpoint_save_path=Path("results_sebastian"),
 )
 
 # --------------------------------------------------------------------------------------------------
-pretraining_settings = offline_training.OfflineTrainingSettings(
-    num_offline_training_points=5,
-    num_threads=5,
-    offline_model_config={"order": 4},
-    lhs_bounds=[[0, 1e7]],
-    lhs_seed=0,
+surrogate_control_settings = surrogate_control.ControlSettings(
+    name="surrogate",
+    port=4243,
+    minimum_num_training_points=0,
+    variance_threshold=1e-3,
+    update_interval_rule=lambda num_updates: num_updates+1,
     checkpoint_load_file=None,
-    checkpoint_save_name="pretraining",
+    checkpoint_save_path=Path("results_sebastian"),
+    overwrite_checkpoint=False,
 )
 
-pretraining_logger_settings = util.LoggerSettings(
+control_logger_settings = util.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_example_gauss_1D/pretraining.log"),
+    logfile_path=Path("results_sebastian/online.log"),
     write_mode="w",
 )

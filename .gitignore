@@ -208,4 +208,5 @@ pyrightconfig.json
 .VSCodeCounter/
 .vscode/
 !/examples/
+!/seissol/
 !/src/

@@ -9,7 +9,7 @@ import src.surrogate.utilities as util
 
 
 # ==================================================================================================
-simulation_model = ub.HTTPModel(url="http://localhost:4242", name="forward")
+simulation_model = util.request_umbridge_server("http://localhost:4242", "forward")
 
 surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
 

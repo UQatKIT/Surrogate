@@ -28,7 +28,7 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     mean_underflow_value=1e-6,
     init_seed=0,
     checkpoint_load_file=None,
-    checkpoint_save_path=Path("results_example_gauss_1D"),
+    checkpoint_save_path=Path("results_sebastian"),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -44,6 +44,6 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
 
 pretraining_logger_settings = util.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_example_gauss_1D/pretraining.log"),
+    logfile_path=Path("results_sebastian/pretraining.log"),
     write_mode="w",
 )

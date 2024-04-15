@@ -1,10 +1,12 @@
 import logging
 import pickle
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import umbridge as ub
 
 
 # ==================================================================================================
@@ -71,3 +73,17 @@ def convert_nested_list_to_array(input_list):
     flattened_list = [value for sublist in input_list for value in sublist]
     array = np.array(flattened_list).reshape(-1, 1)
     return array
+
+# --------------------------------------------------------------------------------------------------
+def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
+    server_available = False
+    while not server_available:
+        try:
+            print(f"Calling server {name} at {address}...")
+            ub_server = ub.HTTPModel(address, name)
+            print("Server available\n")
+            server_available = True
+        except:
+            time.sleep(10)
+
+    return ub_server

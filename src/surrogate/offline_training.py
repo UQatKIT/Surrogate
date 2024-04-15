@@ -1,4 +1,5 @@
 import pickle
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,10 +8,12 @@ from scipy.stats import qmc
 
 from . import utilities as util
 
+
 # ==================================================================================================
 @dataclass
 class OfflineTrainingSettings:
     num_offline_training_points: int
+    num_threads: int
     offline_model_config: dict
     lhs_bounds: list
     lhs_seed: list
@@ -27,6 +30,7 @@ class OfflineTrainer:
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
         self._num_training_points = training_settings.num_offline_training_points
+        self._num_threads = training_settings.num_threads
         self._lower_bounds = [bounds[0] for bounds in training_settings.lhs_bounds]
         self._upper_bounds = [bounds[1] for bounds in training_settings.lhs_bounds]
         self._dimension = len(self._lower_bounds)
@@ -42,15 +46,31 @@ class OfflineTrainer:
         lhs_samples = lhs_sampler.random(n=self._num_training_points)
         lhs_samples = qmc.scale(lhs_samples, self._lower_bounds, self._upper_bounds)
 
+        futures = []
+        futuremap = {}
+        training_input = []
         training_output = []
-        for sample_point in lhs_samples.tolist():
-            simulation_result = self._simulation_model([sample_point], self._config)
-            simulation_result = util.convert_nested_list_to_array(simulation_result)
-            self._logger.log_simulation_run(sample_point, simulation_result)
-            training_output.append(simulation_result)
+
+        with ThreadPoolExecutor(max_workers=self._num_threads) as executor:
+            for sample_point in lhs_samples.tolist():
+                future = executor.submit(self._simulation_model, [sample_point], self._config)
+                futures.append(future)
+                futuremap[future] = sample_point
+
+            for future in as_completed(futures):
+                simulation_result = future.result()
+                futures.remove(future)
+                parameters = futuremap.pop(future)
+                parameters = np.array(parameters)
+                simulation_result = util.convert_nested_list_to_array(simulation_result)
+                training_input.append(parameters)
+                training_output.append(simulation_result)
+                self._logger.log_simulation_run(parameters, simulation_result)
+        
+        training_input = np.row_stack(training_input)
         training_output = np.row_stack(training_output)
 
-        self._surrogate_model.update_training_data(lhs_samples, training_output)
+        self._surrogate_model.update_training_data(training_input, training_output)
         self._surrogate_model.fit()
         scale, correlation_length = self._surrogate_model.scale_and_correlation_length
         self._logger.log_surrogate_fit(scale, correlation_length)
