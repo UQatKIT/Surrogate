@@ -1,6 +1,7 @@
 import logging
 import pickle
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,7 @@ class BaseLogger:
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings) -> None:
+        self._lock = threading.Lock()
         self._logfile_path = logger_settings.logfile_path
         self._pylogger = logging.getLogger(__name__)
         self._pylogger.setLevel(logging.INFO)
@@ -52,11 +54,13 @@ class BaseLogger:
 
     # ----------------------------------------------------------------------------------------------
     def info(self, message: str) -> None:
-        self._pylogger.info(message)
+        with self._lock:
+            self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
     def exception(self, message: str) -> None:
-        self._pylogger.exception(message)
+        with self._lock:
+            self._pylogger.exception(message)
 
 
 # ==================================================================================================
