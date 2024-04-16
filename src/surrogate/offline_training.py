@@ -17,7 +17,6 @@ class OfflineTrainingSettings:
     offline_model_config: dict
     lhs_bounds: list
     lhs_seed: list
-    checkpoint_load_file: Path
     checkpoint_save_name: Path
 
 
@@ -37,8 +36,6 @@ class OfflineTrainer:
         self._seed = training_settings.lhs_seed
         self._config = training_settings.offline_model_config
         self._checkpoint_save_name = training_settings.checkpoint_save_name
-        if training_settings.checkpoint_load_file is not None:
-            self._surrogate_model.load_checkpoint(training_settings.checkpoint_load_file)
 
     # ----------------------------------------------------------------------------------------------
     def run(self):
