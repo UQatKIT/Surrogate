@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import qmc
 
-from . import utilities as util
+from . import utilities as utils
 
 
 # ==================================================================================================
@@ -62,11 +62,11 @@ class OfflineTrainer:
                 futures.remove(future)
                 parameters = futuremap.pop(future)
                 parameters = np.array(parameters)
-                simulation_result = util.convert_nested_list_to_array(simulation_result)
+                simulation_result = utils.convert_nested_list_to_array(simulation_result)
                 training_input.append(parameters)
                 training_output.append(simulation_result)
                 self._logger.log_simulation_run(parameters, simulation_result)
-        
+
         training_input = np.row_stack(training_input)
         training_output = np.row_stack(training_output)
 
@@ -78,7 +78,7 @@ class OfflineTrainer:
 
 
 # ==================================================================================================
-class OfflineTrainingLogger(util.BaseLogger):
+class OfflineTrainingLogger(utils.BaseLogger):
 
     def __init__(self, logger_settings) -> None:
         super().__init__(logger_settings)

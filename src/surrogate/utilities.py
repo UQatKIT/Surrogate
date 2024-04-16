@@ -11,6 +11,12 @@ import umbridge as ub
 
 # ==================================================================================================
 @dataclass
+class SimulationModelSettings:
+    url: str
+    name: str
+
+
+@dataclass
 class LoggerSettings:
     do_printing: bool = True
     logfile_path: str = None
@@ -73,6 +79,7 @@ def convert_nested_list_to_array(input_list):
     flattened_list = [value for sublist in input_list for value in sublist]
     array = np.array(flattened_list).reshape(-1, 1)
     return array
+
 
 # --------------------------------------------------------------------------------------------------
 def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:

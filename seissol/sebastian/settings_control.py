@@ -1,15 +1,16 @@
 from pathlib import Path
 
-import umbridge as ub
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
-import src.surrogate.surrogate_model as surrogate_model
 import src.surrogate.surrogate_control as surrogate_control
-import src.surrogate.utilities as util
-
+import src.surrogate.surrogate_model as surrogate_model
+import src.surrogate.utilities as utils
 
 # ==================================================================================================
-simulation_model = util.request_umbridge_server("http://localhost:4242", "forward")
+simulation_model_settings = utils.SimulationModelSettings(
+    url="http://localhost:4242",
+    name="forward",
+)
 
 surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
 
@@ -27,8 +28,8 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     log_mean_underflow_value=-1000,
     mean_underflow_value=1e-6,
     init_seed=0,
-    checkpoint_load_file="results_sebastian/surrogate_checkpoint_pretraining.pkl",
-    checkpoint_save_path=Path("results_sebastian"),
+    checkpoint_load_file="results_seissol_sebastian/surrogate_checkpoint_pretraining.pkl",
+    checkpoint_save_path=Path("results_seissol_sebastian"),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -37,14 +38,14 @@ surrogate_control_settings = surrogate_control.ControlSettings(
     port=4243,
     minimum_num_training_points=0,
     variance_threshold=1e-3,
-    update_interval_rule=lambda num_updates: num_updates+1,
+    update_interval_rule=lambda num_updates: num_updates + 1,
     checkpoint_load_file=None,
-    checkpoint_save_path=Path("results_sebastian"),
+    checkpoint_save_path=Path("results_seissol_sebastian"),
     overwrite_checkpoint=False,
 )
 
-control_logger_settings = util.LoggerSettings(
+control_logger_settings = utils.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_sebastian/online.log"),
+    logfile_path=Path("results_seissol_sebastian/online.log"),
     write_mode="w",
 )

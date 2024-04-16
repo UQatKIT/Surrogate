@@ -8,12 +8,12 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import umbridge as ub
 from matplotlib.backends.backend_pdf import PdfPages
 
 import src.surrogate.utilities as utils
 
 
+# ==================================================================================================
 class test_client_settings:
     offline_checkpoint_path = Path("results_example_gauss_1D/surrogate_checkpoint_pretraining.pkl")
     offline_visualization_file = Path("results_example_gauss_1D/pretraining.pdf")
@@ -90,7 +90,7 @@ def assess_online_training(control_settings, test_client_settings):
     print("Assess online control...")
 
     control = utils.request_umbridge_server(
-        test_client_settings.surrogate_name, test_client_settings.surrogate_url
+        test_client_settings.surrogate_url, test_client_settings.surrogate_name
     )
     control_call = partial(control, config=test_client_settings.simulation_config)
     test_surrogate = control_settings.surrogate_model_type(

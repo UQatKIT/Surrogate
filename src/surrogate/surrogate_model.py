@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 
-from . import utilities as util
+from . import utilities as utils
 
 
 # ==================================================================================================
@@ -92,11 +92,11 @@ class BaseSurrogateModel:
     @property
     def variance_is_relative(self):
         return self._variance_is_relative
-    
+
     @property
     def variance_reference(self):
         return self._variance_reference
-    
+
     @property
     def output_data_range(self):
         return self._max_output_data - self._min_output_data
@@ -175,7 +175,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             output_data=self._training_output,
             hyperparameters=self._gp_model.kernel.get_params(),
         )
-        util.save_checkpoint_pickle(
+        utils.save_checkpoint_pickle(
             self._checkpoint_save_path, "surrogate_checkpoint", checkpoint, checkpoint_id
         )
 
@@ -194,7 +194,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             random_state=settings.init_seed,
         )
         return gp_model
-    
+
     # ----------------------------------------------------------------------------------------------
     @property
     def training_data(self):
