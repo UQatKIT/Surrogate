@@ -1,3 +1,46 @@
+# ====================================== General Configuration =====================================
+[project]
+name = "surrogate"
+version = "0.1.0"
+description = "Umbridge Surrogate Server"
+readme = "README.md"
+license = {text = "GNU GPLv3"}
+authors = [
+    {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
+    {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
+]
+
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.1.12",
+    "scikit-learn>=1.4",
+    "umbridge>=1.2"
+]
+
+#---------------------------------------------------------------------------------------------------
+[project.optional-dependencies]
+model = [
+    
+]
+postprocessing = [
+    "matplotlib>=3.8"
+]
+notebook = [
+    "jupyter>=1.0",
+    "pandas>=2.2"
+]
+style = [
+    "ruff>=0.3",
+    "black>=24.3",
+    "mypy>=1.9",
+]
+
+#---------------------------------------------------------------------------------------------------
+[build-system]
+requires = ["setuptools>=58", "wheel"]
+build-backend = "setuptools.build_meta"
+
 # =============================================== Ruff =============================================
 [tool.ruff]
 line-length = 100
