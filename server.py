@@ -4,6 +4,7 @@ import importlib
 import umbridge as ub
 
 import src.surrogate.surrogate_control as surrogate_control
+import src.surrogate.utilities as utils
 
 
 # ==================================================================================================
@@ -35,11 +36,15 @@ def main():
     settings_module = importlib.import_module(settings_module)
 
     surrogate_model = settings_module.surrogate_model_type(settings_module.surrogate_model_settings)
+    simulation_model = utils.request_umbridge_server(
+        settings_module.simulation_model_settings.url,
+        settings_module.simulation_model_settings.name,
+    )
     control = surrogate_control.SurrogateControl(
         settings_module.surrogate_control_settings,
         settings_module.control_logger_settings,
         surrogate_model,
-        settings_module.simulation_model,
+        simulation_model,
     )
     ub.serve_models(
         [control], port=settings_module.surrogate_control_settings.port, max_workers=100

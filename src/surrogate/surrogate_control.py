@@ -7,14 +7,14 @@ from pathlib import Path
 import numpy as np
 import umbridge as ub
 
-from . import utilities as util
+from . import utilities as utils
 
 
 # ==================================================================================================
 @dataclass
 class ControlSettings:
-    name: str
     port: str
+    name: str
     minimum_num_training_points: int
     variance_threshold: float
     update_interval_rule: Callable
@@ -162,7 +162,7 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _call_surrogate(self, parameters):
         with self._surrogate_lock:
-            parameter_array = util.convert_nested_list_to_array(parameters)
+            parameter_array = utils.convert_nested_list_to_array(parameters)
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
 
         return result, variance
@@ -181,8 +181,8 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _queue_training_data(self, parameters, result):
         with self._data_lock:
-            input_array = util.convert_nested_list_to_array(parameters)
-            output_array = util.convert_nested_list_to_array(result)
+            input_array = utils.convert_nested_list_to_array(parameters)
+            output_array = utils.convert_nested_list_to_array(result)
             self._input_training_data.append(input_array)
             self._output_training_data.append(output_array)
 
@@ -214,7 +214,7 @@ class SurrogateControl(ub.Model):
             num_completed_updates=self._num_surrogate_model_updates,
             next_update_iter=self._next_surrogate_model_update_iter,
         )
-        util.save_checkpoint_pickle(
+        utils.save_checkpoint_pickle(
             self._checkpoint_save_path, "control_checkpoint", checkpoint, checkpoint_id
         )
 
@@ -228,7 +228,7 @@ class SurrogateControl(ub.Model):
 
 
 # ==================================================================================================
-class SurrogateLogger(util.BaseLogger):
+class SurrogateLogger(utils.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings) -> None:
