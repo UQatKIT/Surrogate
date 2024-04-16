@@ -4,30 +4,13 @@ import importlib
 import os
 import time
 from functools import partial
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
 import src.surrogate.utilities as utils
-
-
-# ==================================================================================================
-class test_client_settings:
-    offline_checkpoint_path = Path("results_example_gauss_1D/surrogate_checkpoint_pretraining.pkl")
-    offline_visualization_file = Path("results_example_gauss_1D/pretraining.pdf")
-    offline_test_params = np.linspace(0, 1e7, 100).reshape(-1, 1)
-    variance_reference = None
-
-    surrogate_url = "http://localhost:4243"
-    surrogate_name = "surrogate"
-    simulation_config = {"order": 4}
-    checkpoint_path = Path("results_example_gauss_1D")
-    online_visualization_file = Path("results_example_gauss_1D/online.pdf")
-    online_training_params = np.random.uniform(0, 1e7, 10)
-    online_test_params = np.linspace(0, 1e7, 100).reshape(-1, 1)
-
+    
 
 # ==================================================================================================
 def process_cli_arguments():
@@ -86,19 +69,19 @@ def assess_offline_training(pretraining_settings, test_client_settings):
 
 
 # --------------------------------------------------------------------------------------------------
-def assess_online_training(control_settings, test_client_settings):
+def assess_online_training(control_settings, online_settings):
     print("Assess online control...")
 
     control = utils.request_umbridge_server(
-        test_client_settings.surrogate_url, test_client_settings.surrogate_name
+        online_settings.surrogate_url, online_settings.surrogate_name
     )
-    control_call = partial(control, config=test_client_settings.simulation_config)
+    control_call = partial(control, config=online_settings.simulation_config)
     test_surrogate = control_settings.surrogate_model_type(
         control_settings.surrogate_model_settings
     )
 
     evals_before_each_checkpoint = [[]]
-    for param in test_client_settings.online_training_params:
+    for param in online_settings.online_training_params:
         result = control_call([[param]])
         value_pair = [param, np.exp(result[0][0])]
         surrogate_used = result[2][0]
@@ -110,15 +93,15 @@ def assess_online_training(control_settings, test_client_settings):
     num_checkpoints = len(evals_before_each_checkpoint) - 1
     time.sleep(1)
 
-    checkpoint_files = _find_checkpoints(test_client_settings.checkpoint_path)
-    test_params = test_client_settings.online_test_params
-    with PdfPages(test_client_settings.online_visualization_file) as pdf:
-        test_surrogate.load_checkpoint(test_client_settings.offline_checkpoint_path)
+    checkpoint_files = _find_checkpoints(online_settings.checkpoint_path)
+    test_params = online_settings.online_test_params
+    with PdfPages(online_settings.online_visualization_file) as pdf:
+        test_surrogate.load_checkpoint(online_settings.offline_checkpoint_path)
         _visualize_1D(pdf, test_surrogate, test_params, evals_before_each_checkpoint[0])
 
         for i in range(num_checkpoints):
             checkpoint_file = [file for file in checkpoint_files if f"{i}" in file][0]
-            test_surrogate.load_checkpoint(test_client_settings.checkpoint_path / checkpoint_file)
+            test_surrogate.load_checkpoint(online_settings.checkpoint_path / checkpoint_file)
             _visualize_1D(pdf, test_surrogate, test_params, evals_before_each_checkpoint[i + 1])
 
 
@@ -163,15 +146,17 @@ def _visualize_1D(pdf, surrogate, test_params, surrogate_evals=None):
 # ==================================================================================================
 def main():
     application_dir, assess_pretraining, assess_control = process_cli_arguments()
+    settings_testclient = f"{application_dir}.settings_testclient"
     settings_pretraining = f"{application_dir}.settings_pretraining"
     settings_control = f"{application_dir}.settings_control"
+    settings_testclient = importlib.import_module(settings_testclient)
     settings_pretraining = importlib.import_module(settings_pretraining)
     settings_control = importlib.import_module(settings_control)
 
     if assess_pretraining:
-        assess_offline_training(settings_pretraining, test_client_settings)
+        assess_offline_training(settings_pretraining, settings_testclient.pretraining_settings)
     if assess_control:
-        assess_online_training(settings_control, test_client_settings)
+        assess_online_training(settings_control, settings_testclient.online_settings)
 
 
 if __name__ == "__main__":

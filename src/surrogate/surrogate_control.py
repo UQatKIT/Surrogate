@@ -255,39 +255,41 @@ class SurrogateLogger(utils.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def log_control_call_info(self, call_info: CallInfo) -> None:
-        parameters = np.array(call_info.parameters)
-        parameter_str = [f"{val:<12.3e}" for val in np.nditer(parameters)]
-        variance_str = [f"{val:<12.3e}" for val in np.nditer(call_info.variance)]
-        if call_info.surrogate_result is not None:
-            surrogate_result = np.array(call_info.surrogate_result)
-            surrogate_result_str = [f"{val:<12.3e}" for val in np.nditer(surrogate_result)]
-        else:
-            surrogate_result_str = "None"
-        if call_info.simulation_result is not None:
-            simulation_result = np.array(call_info.simulation_result)
-            simulation_result_str = [f"{val:<12.3e}" for val in np.nditer(simulation_result)]
-        else:
-            simulation_result_str = "None"
+        with self._lock:
+            parameters = np.array(call_info.parameters)
+            parameter_str = [f"{val:<12.3e}" for val in np.nditer(parameters)]
+            variance_str = [f"{val:<12.3e}" for val in np.nditer(call_info.variance)]
+            if call_info.surrogate_result is not None:
+                surrogate_result = np.array(call_info.surrogate_result)
+                surrogate_result_str = [f"{val:<12.3e}" for val in np.nditer(surrogate_result)]
+            else:
+                surrogate_result_str = "None"
+            if call_info.simulation_result is not None:
+                simulation_result = np.array(call_info.simulation_result)
+                simulation_result_str = [f"{val:<12.3e}" for val in np.nditer(simulation_result)]
+            else:
+                simulation_result_str = "None"
 
-        output_str = (
-            "[call] "
-            f"Par: ({parameter_str}) | "
-            f"Sur: ({surrogate_result_str}) | "
-            f"Sim: ({simulation_result_str}) | "
-            f"Var: ({variance_str}) | "
-            f"SU: {str(call_info.surrogate_used):<5} | "
-            f"N: {call_info.num_training_points:<12.3e}"
-        )
-        self._pylogger.info(output_str)
+            output_str = (
+                "[call] "
+                f"Par: ({parameter_str}) | "
+                f"Sur: ({surrogate_result_str}) | "
+                f"Sim: ({simulation_result_str}) | "
+                f"Var: ({variance_str}) | "
+                f"SU: {str(call_info.surrogate_used):<5} | "
+                f"N: {call_info.num_training_points:<12.3e}"
+            )
+            self._pylogger.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
     def log_surrogate_update_info(self, update_info: UpdateInfo) -> None:
-        output_str = (
-            "[update] "
-            f"New: {str(update_info.new_fit):<5} | "
-            f"Num: {update_info.num_updates:<12.3e} | "
-            f"Next: {update_info.next_update:<12.3e} | "
-            f"Scale: {update_info.scale:<12.3e} | "
-            f"Corr: {update_info.correlation_length:<12.3e}"
-        )
-        self._pylogger.info(output_str)
+        with self._lock:
+            output_str = (
+                "[update] "
+                f"New: {str(update_info.new_fit):<5} | "
+                f"Num: {update_info.num_updates:<12.3e} | "
+                f"Next: {update_info.next_update:<12.3e} | "
+                f"Scale: {update_info.scale:<12.3e} | "
+                f"Corr: {update_info.correlation_length:<12.3e}"
+            )
+            self._pylogger.info(output_str)

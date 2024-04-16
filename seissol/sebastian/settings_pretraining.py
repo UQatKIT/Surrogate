@@ -39,7 +39,6 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
     offline_model_config={"order": 4},
     lhs_bounds=[[0, 1e7]],
     lhs_seed=0,
-    checkpoint_load_file=None,
     checkpoint_save_name="pretraining",
 )
 
