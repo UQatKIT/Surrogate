@@ -61,7 +61,7 @@ class SurrogateControl(ub.Model):
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
         self._input_sizes = simulation_model.get_input_sizes()
-        self._output_sizes = [np.prod(simulation_model.get_output_sizes()), 1, 1]
+        self._output_sizes = [simulation_model.get_output_sizes()[0], 1, 1]
 
         self._num_saved_checkpoints = 0
         self._num_generated_training_points = 0
@@ -98,7 +98,7 @@ class SurrogateControl(ub.Model):
     def __call__(self, parameters, config):
         if self._num_generated_training_points < self._minimum_num_training_points:
             surrogate_result = None
-            simulation_result = self._simulation_model(parameters, config)
+            simulation_result = self._simulation_model(parameters, config)[0]
             variance = 0
             surrogate_used = False
             result_list = simulation_result + [[variance]]
@@ -167,6 +167,7 @@ class SurrogateControl(ub.Model):
 
         return result, variance
 
+    # ----------------------------------------------------------------------------------------------
     def _retrain_surrogate(self):
         with self._surrogate_lock:
             try:
@@ -182,7 +183,7 @@ class SurrogateControl(ub.Model):
     def _queue_training_data(self, parameters, result):
         with self._data_lock:
             input_array = utils.convert_nested_list_to_array(parameters)
-            output_array = utils.convert_nested_list_to_array(result)
+            output_array = utils.convert_list_to_array(result)
             self._input_training_data.append(input_array)
             self._output_training_data.append(output_array)
 

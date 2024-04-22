@@ -55,11 +55,11 @@ class OfflineTrainer:
                 futuremap[future] = sample_point
 
             for future in as_completed(futures):
-                simulation_result = future.result()
+                simulation_result = future.result()[0]
                 futures.remove(future)
                 parameters = futuremap.pop(future)
                 parameters = np.array(parameters)
-                simulation_result = utils.convert_nested_list_to_array(simulation_result)
+                simulation_result = utils.convert_list_to_array(simulation_result)
                 training_input.append(parameters)
                 training_output.append(simulation_result)
                 self._logger.log_simulation_run(parameters, simulation_result)
