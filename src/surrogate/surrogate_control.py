@@ -110,7 +110,7 @@ class SurrogateControl(ub.Model):
                 surrogate_used = True
                 result_list = [surrogate_result.tolist(), variance.tolist()]
             else:
-                simulation_result = self._simulation_model(parameters, config)
+                simulation_result = self._simulation_model(parameters, config)[0]
                 surrogate_used = False
                 result_list = simulation_result + [variance.tolist()]
                 self._queue_training_data(parameters, simulation_result)
