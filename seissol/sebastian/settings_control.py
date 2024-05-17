@@ -8,8 +8,8 @@ import src.surrogate.utilities as utils
 
 # ==================================================================================================
 simulation_model_settings = utils.SimulationModelSettings(
-    url="http://localhost:4242",
-    name="forward",
+    url="http://localhost:4343",
+    name="QueuingModel",
 )
 
 surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
