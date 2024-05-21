@@ -124,7 +124,6 @@ class SurrogateControl(ub.Model):
             self._num_generated_training_points,
         )
         self._logger.log_control_call_info(call_info)
-        print(result_list)
         return result_list + [[int(surrogate_used)]]
 
     # ----------------------------------------------------------------------------------------------
