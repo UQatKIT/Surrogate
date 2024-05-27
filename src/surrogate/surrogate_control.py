@@ -101,7 +101,7 @@ class SurrogateControl(ub.Model):
             simulation_result = self._simulation_model(parameters, config)[0]
             variance = 0
             surrogate_used = False
-            result_list = simulation_result + [[variance]]
+            result_list = [[simulation_result], [variance]]
             self._queue_training_data(parameters, simulation_result)
         else:
             surrogate_result, variance = self._call_surrogate(parameters)
@@ -110,9 +110,9 @@ class SurrogateControl(ub.Model):
                 surrogate_used = True
                 result_list = [surrogate_result.tolist(), variance.tolist()]
             else:
-                simulation_result = self._simulation_model(parameters, config)
+                simulation_result = self._simulation_model(parameters, config)[0]
                 surrogate_used = False
-                result_list = simulation_result + [variance.tolist()]
+                result_list = [simulation_result, variance.tolist()]
                 self._queue_training_data(parameters, simulation_result)
 
         call_info = CallInfo(
