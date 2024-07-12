@@ -96,6 +96,10 @@ class BaseSurrogateModel:
     @property
     def variance_reference(self):
         return self._variance_reference
+    
+    @property
+    def log_transformed(self):
+        return self._perform_log_transform
 
     @property
     def output_data_range(self):

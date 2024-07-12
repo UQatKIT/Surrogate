@@ -29,7 +29,7 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     mean_underflow_value=1e-6,
     init_seed=0,
     checkpoint_load_file=None,
-    checkpoint_save_path=Path("results_seissol_zihua"),
+    checkpoint_save_path=Path("results_seissol_zihua_1D"),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -44,6 +44,6 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
 
 pretraining_logger_settings = utils.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_seissol_zihua/pretraining.log"),
+    logfile_path=Path("results_seissol_zihua_1D/pretraining.log"),
     write_mode="w",
 )

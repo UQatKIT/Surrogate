@@ -45,7 +45,10 @@ def main():
         surrogate_model,
         simulation_model,
     )
+    print("Run pretraining...")
     offline_trainer.run()
+    print("Visualize results...")
+    offline_trainer.visualize()
 
 
 if __name__ == "__main__":

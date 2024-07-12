@@ -26,7 +26,6 @@ class LoggerSettings:
 
 # ==================================================================================================
 class BaseLogger:
-
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings) -> None:
         self._lock = threading.Lock()
@@ -77,10 +76,12 @@ def save_checkpoint_pickle(path, filename, checkpoint, checkpoint_id):
         with open(checkpoint_file, "wb") as cp_file:
             pickle.dump(checkpoint, cp_file)
 
+
 # --------------------------------------------------------------------------------------------------
 def convert_list_to_array(input_list):
-    array = np.array(input_list).reshape(-1, 1)
+    array = np.array(input_list).reshape(1, len(input_list))
     return array
+
 
 # --------------------------------------------------------------------------------------------------
 def convert_nested_list_to_array(input_list):

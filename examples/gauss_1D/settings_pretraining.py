@@ -1,3 +1,4 @@
+import numpy as np
 from pathlib import Path
 
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
@@ -40,6 +41,8 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
     lhs_bounds=[[0, 1e7]],
     lhs_seed=0,
     checkpoint_save_name="pretraining",
+    test_params=np.linspace(0, 1e7, 100).reshape(-1, 1),
+    visualization_file=Path("results_example_gauss_1D/pretraining.pdf"),
 )
 
 pretraining_logger_settings = utils.LoggerSettings(

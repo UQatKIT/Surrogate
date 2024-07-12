@@ -162,7 +162,7 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _call_surrogate(self, parameters):
         with self._surrogate_lock:
-            parameter_array = utils.convert_nested_list_to_array(parameters)
+            parameter_array = utils.convert_list_to_array(parameters[0])
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
 
         return result, variance
@@ -182,7 +182,7 @@ class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
     def _queue_training_data(self, parameters, result):
         with self._data_lock:
-            input_array = utils.convert_nested_list_to_array(parameters)
+            input_array = utils.convert_list_to_array(parameters[0])
             output_array = utils.convert_list_to_array(result)
             self._input_training_data.append(input_array)
             self._output_training_data.append(output_array)
@@ -285,12 +285,13 @@ class SurrogateLogger(utils.BaseLogger):
     # ----------------------------------------------------------------------------------------------
     def log_surrogate_update_info(self, update_info: UpdateInfo) -> None:
         with self._lock:
+            corr_length_str = [f"{val:<12.3e}" for val in np.nditer(update_info.correlation_length)]
             output_str = (
                 "[update] "
                 f"New: {str(update_info.new_fit):<5} | "
                 f"Num: {update_info.num_updates:<12.3e} | "
                 f"Next: {update_info.next_update:<12.3e} | "
                 f"Scale: {update_info.scale:<12.3e} | "
-                f"Corr: {update_info.correlation_length:<12.3e}"
+                f"Corr: {corr_length_str}"
             )
             self._pylogger.info(output_str)

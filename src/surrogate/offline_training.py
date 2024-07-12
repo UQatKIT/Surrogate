@@ -1,12 +1,13 @@
-import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import qmc
 
-from . import utilities as utils
+
+from . import utilities as utils, visualization as viz
 
 
 # ==================================================================================================
@@ -18,6 +19,8 @@ class OfflineTrainingSettings:
     lhs_bounds: list
     lhs_seed: list
     checkpoint_save_name: Path
+    test_params: np.ndarray
+    visualization_file: Path
 
 
 # ==================================================================================================
@@ -36,6 +39,8 @@ class OfflineTrainer:
         self._seed = training_settings.lhs_seed
         self._config = training_settings.offline_model_config
         self._checkpoint_save_name = training_settings.checkpoint_save_name
+        self._test_params = training_settings.test_params
+        self._visualization_file = training_settings.visualization_file
 
     # ----------------------------------------------------------------------------------------------
     def run(self):
@@ -73,6 +78,15 @@ class OfflineTrainer:
         self._logger.log_surrogate_fit(scale, correlation_length)
         self._surrogate_model.save_checkpoint(self._checkpoint_save_name)
 
+    # ----------------------------------------------------------------------------------------------
+    def visualize(self):
+        if self._visualization_file is not None:
+            if not self._visualization_file.parent.is_dir():
+                self._visualization_file.parent.mkdir(parents=True, exist_ok=True)
+            with PdfPages(self._visualization_file) as pdf:
+                viz.visualize_checkpoint(pdf, self._surrogate_model, self._test_params)
+            
+
 
 # ==================================================================================================
 class OfflineTrainingLogger(utils.BaseLogger):
@@ -87,5 +101,6 @@ class OfflineTrainingLogger(utils.BaseLogger):
         self._pylogger.info(output_str)
 
     def log_surrogate_fit(self, scale, correlation_length):
-        output_str = "[fit] " f"Scale: {scale:<12.3e} | " f"Corr: {correlation_length:<12.3e}"
+        corr_length_str = [f"{val:<12.3e}" for val in np.nditer(correlation_length)]
+        output_str = "[fit] " f"Scale: {scale:<12.3e} | " f"Corr: {corr_length_str}"
         self._pylogger.info(output_str)
