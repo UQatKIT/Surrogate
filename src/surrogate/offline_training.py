@@ -101,6 +101,7 @@ class OfflineTrainingLogger(utils.BaseLogger):
         self._pylogger.info(output_str)
 
     def log_surrogate_fit(self, scale, correlation_length):
-        corr_length_str = [f"{val:<12.3e}" for val in np.nditer(correlation_length)]
+        print('correlation_length', correlation_length)
+        corr_length_str = [f"{val:<12.3e}" for val in correlation_length]
         output_str = "[fit] " f"Scale: {scale:<12.3e} | " f"Corr: {corr_length_str}"
         self._pylogger.info(output_str)

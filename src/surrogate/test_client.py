@@ -46,6 +46,7 @@ class TestClient:
         for param in self._training_params:
             if not isinstance(param, np.ndarray):
                 param = np.array([param,])
+            print(param.tolist())
             result = self._control_call([param.tolist()])
             value_pair = [param, np.exp(result[0][0])]
             surrogate_used = result[2][0]
