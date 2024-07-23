@@ -36,8 +36,9 @@ class Visualizer:
             num_checkpoints = len(checkpoint_files)
 
             with PdfPages(self._visualization_file) as pdf:
-                self._test_surrogate.load_checkpoint(self._offline_checkpoint_file)
-                self._visualize_checkpoint(pdf)
+                if self._offline_checkpoint_file is not None:
+                    self._test_surrogate.load_checkpoint(self._offline_checkpoint_file)
+                    self._visualize_checkpoint(pdf)
 
                 for i in range(num_checkpoints):
                     checkpoint_file = [file for file in checkpoint_files if f"{i}" in file][0]
