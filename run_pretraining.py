@@ -8,7 +8,7 @@ import src.surrogate.utilities as utils
 # ==================================================================================================
 def process_cli_arguments():
     argParser = argparse.ArgumentParser(
-        prog="pretrain.py",
+        prog="run_pretraining.py",
         usage="python %(prog)s [options]",
         description="Run file for surrogate pre-training",
     )
@@ -30,25 +30,25 @@ def process_cli_arguments():
 # ==================================================================================================
 def main():
     application_dir = process_cli_arguments()
-    settings_module = f"{application_dir}.settings_pretraining"
-    settings_module = importlib.import_module(settings_module)
+    settings_module = f"{application_dir}.settings"
+    settings = importlib.import_module(settings_module)
 
-    surrogate_model = settings_module.surrogate_model_type(settings_module.surrogate_model_settings)
+    surrogate_settings = settings.surrogate_model_settings
+    surrogate_settings.checkpoint_load_file = None
+    surrogate_model = settings.surrogate_model_type(surrogate_settings)
     simulation_model = utils.request_umbridge_server(
-        settings_module.simulation_model_settings.url,
-        settings_module.simulation_model_settings.name,
+        settings.simulation_model_settings.url,
+        settings.simulation_model_settings.name,
     )
 
     offline_trainer = offline_training.OfflineTrainer(
-        settings_module.pretraining_settings,
-        settings_module.pretraining_logger_settings,
+        settings.pretraining_settings,
+        settings.pretraining_logger_settings,
         surrogate_model,
         simulation_model,
     )
     print("Run pretraining...")
     offline_trainer.run()
-    print("Visualize results...")
-    offline_trainer.visualize()
 
 
 if __name__ == "__main__":
