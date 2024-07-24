@@ -285,7 +285,7 @@ class SurrogateLogger(utils.BaseLogger):
     # ----------------------------------------------------------------------------------------------
     def log_surrogate_update_info(self, update_info: UpdateInfo) -> None:
         with self._lock:
-            corr_length_str = [f"{val:<12.3e}" for val in np.nditer(update_info.correlation_length)]
+            corr_length_str = [f"{val:<12.3e}" for val in update_info.correlation_length]
             output_str = (
                 "[update] "
                 f"New: {str(update_info.new_fit):<5} | "

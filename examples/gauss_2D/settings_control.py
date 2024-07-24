@@ -28,7 +28,8 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     log_mean_underflow_value=-1000,
     mean_underflow_value=1e-6,
     init_seed=0,
-    checkpoint_load_file="results_example_gauss_2D/surrogate_checkpoint_pretraining.pkl",
+    #checkpoint_load_file="results_example_gauss_2D/surrogate_checkpoint_pretraining.pkl",
+    checkpoint_load_file=None,
     checkpoint_save_path=Path("results_example_gauss_2D"),
 )
 
