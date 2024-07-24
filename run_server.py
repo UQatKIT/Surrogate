@@ -10,7 +10,7 @@ import src.surrogate.utilities as utils
 # ==================================================================================================
 def process_cli_arguments():
     argParser = argparse.ArgumentParser(
-        prog="surrogate.py",
+        prog="run_server.py",
         usage="python %(prog)s [options]",
         description="Run file for Umbridge surrogate",
     )
@@ -32,7 +32,7 @@ def process_cli_arguments():
 # ==================================================================================================
 def main():
     application_dir = process_cli_arguments()
-    settings_module = f"{application_dir}.settings_control"
+    settings_module = f"{application_dir}.settings"
     settings_module = importlib.import_module(settings_module)
 
     surrogate_model = settings_module.surrogate_model_type(settings_module.surrogate_model_settings)
@@ -46,6 +46,7 @@ def main():
         surrogate_model,
         simulation_model,
     )
+    print("Run surrogate control...")
     ub.serve_models(
         [control], port=settings_module.surrogate_control_settings.port, max_workers=100
     )

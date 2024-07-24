@@ -1,16 +1,15 @@
 import argparse
 import importlib
-import time
 
-import src.surrogate.test_client as test_client
+import src.surrogate.visualization as visualization
 
 
 # ==================================================================================================
 def process_cli_arguments():
     argParser = argparse.ArgumentParser(
-        prog="run_testclient.py",
+        prog="run_visualization.py",
         usage="python %(prog)s [options]",
-        description="Run file for surrogate test client",
+        description="Run file for visualization of surrogate checkpoints",
     )
 
     argParser.add_argument(
@@ -21,32 +20,26 @@ def process_cli_arguments():
         help="Application directory",
     )
 
-    argParser.add_argument(
-        "-t",
-        "--sleeptime",
-        type=float,
-        required=False,
-        default=1,
-        help="Artificial sleep time to allow for data pickling",
-    )
-
     cliArgs = argParser.parse_args()
     application_dir = cliArgs.application.replace("/", ".").strip(".")
-    sleep_time = cliArgs.sleeptime
 
-    return application_dir, sleep_time
+    return application_dir
 
 
 # ==================================================================================================
 def main():
-    application_dir, sleep_time = process_cli_arguments()
+    application_dir = process_cli_arguments()
     settings_module = f"{application_dir}.settings"
     settings = importlib.import_module(settings_module)
 
-    client = test_client.TestClient(settings.test_client_settings)
-    print("Run test client...")
-    client.run()
-    time.sleep(sleep_time)
+    surrogate_settings = settings.surrogate_model_settings
+    surrogate_settings.checkpoint_load_file = None
+    surrogate_settings.checkpoint_save_path = None
+
+    surrogate_model = settings.surrogate_model_type(settings.surrogate_model_settings)
+    visualizer = visualization.Visualizer(settings.visualization_settings, surrogate_model)
+    print("Run visualization...")
+    visualizer.run()
 
 
 if __name__ == "__main__":

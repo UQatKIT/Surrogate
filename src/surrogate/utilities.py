@@ -3,6 +3,7 @@ import pickle
 import sys
 import threading
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,6 +61,16 @@ class BaseLogger:
     def exception(self, message: str) -> None:
         with self._lock:
             self._pylogger.exception(message)
+
+    # ----------------------------------------------------------------------------------------------
+    def _process_value_str(self, value, str_format):
+        if isinstance(value, Iterable):
+            value = np.array(value)
+            value_str = [f"{val:{str_format}}" for val in np.nditer(value)]
+            value_str = f"{','.join(value_str)}"
+        else:
+            value_str = f"{value:{str_format}}"
+        return value_str
 
 
 # ==================================================================================================

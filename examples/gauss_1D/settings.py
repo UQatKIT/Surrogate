@@ -1,9 +1,13 @@
 from pathlib import Path
 
+import numpy as np
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
 import src.surrogate.surrogate_control as surrogate_control
 import src.surrogate.surrogate_model as surrogate_model
+import src.surrogate.offline_training as offline_training
+import src.surrogate.test_client as test_client
+import src.surrogate.visualization as visualization
 import src.surrogate.utilities as utils
 
 # ==================================================================================================
@@ -48,4 +52,36 @@ control_logger_settings = utils.LoggerSettings(
     do_printing=True,
     logfile_path=Path("results_example_gauss_1D/online.log"),
     write_mode="w",
+)
+
+# --------------------------------------------------------------------------------------------------
+pretraining_settings = offline_training.OfflineTrainingSettings(
+    num_offline_training_points=5,
+    num_threads=5,
+    offline_model_config={"order": 4},
+    lhs_bounds=[[0, 1e7]],
+    lhs_seed=0,
+    checkpoint_save_name="pretraining",
+)
+
+pretraining_logger_settings = utils.LoggerSettings(
+    do_printing=True,
+    logfile_path=Path("results_example_gauss_1D/pretraining.log"),
+    write_mode="w",
+)
+
+# --------------------------------------------------------------------------------------------------
+test_client_settings = test_client.TestClientSettings(
+    control_url="http://localhost:4243",
+    control_name="surrogate",
+    simulation_config={"order": 4},
+    training_params=np.random.uniform(0, 1e7, 10),
+)
+
+# --------------------------------------------------------------------------------------------------
+visualization_settings = visualization.VisualizationSettings(
+    online_checkpoint_path=Path("results_example_gauss_1D"),
+    offline_checkpoint_file=Path("results_example_gauss_1D/surrogate_checkpoint_pretraining.pkl"),
+    visualization_file=Path("results_example_gauss_1D/visualization.pdf"),
+    visualization_points=np.linspace(0, 1e7, 100).reshape(-1, 1),   
 )
