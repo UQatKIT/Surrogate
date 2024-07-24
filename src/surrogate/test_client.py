@@ -30,4 +30,4 @@ class TestClient:
         for param in self._training_params:
             if not isinstance(param, np.ndarray):
                 param = np.array([param,])
-            _ = self._control_call([param.tolist()]
+            _ = self._control_call([param.tolist()])
