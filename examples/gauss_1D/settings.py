@@ -41,7 +41,7 @@ surrogate_control_settings = surrogate_control.ControlSettings(
     name="surrogate",
     port=4243,
     minimum_num_training_points=0,
-    variance_threshold=1e-3,
+    variance_threshold=1e-9,
     update_interval_rule=lambda num_updates: num_updates + 1,
     checkpoint_load_file=None,
     checkpoint_save_path=Path("results_example_gauss_1D"),
@@ -80,8 +80,8 @@ test_client_settings = test_client.TestClientSettings(
 
 # --------------------------------------------------------------------------------------------------
 visualization_settings = visualization.VisualizationSettings(
-    online_checkpoint_path=Path("results_example_gauss_1D"),
     offline_checkpoint_file=Path("results_example_gauss_1D/surrogate_checkpoint_pretraining.pkl"),
+    online_checkpoint_filestub=Path("results_example_gauss_1D/surrogate_checkpoint"),
     visualization_file=Path("results_example_gauss_1D/visualization.pdf"),
     visualization_points=np.linspace(0, 1e7, 100).reshape(-1, 1),   
 )
