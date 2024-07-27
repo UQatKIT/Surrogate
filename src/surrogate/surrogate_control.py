@@ -18,15 +18,7 @@ class ControlSettings:
     minimum_num_training_points: int
     variance_threshold: float
     update_interval_rule: Callable
-    checkpoint_load_file: Path = None
-    checkpoint_save_path: Path = None
     overwrite_checkpoint: bool = True
-
-
-@dataclass
-class Checkpoint:
-    num_completed_updates: int
-    next_update_iter: int
 
 
 @dataclass
@@ -67,17 +59,13 @@ class SurrogateControl(ub.Model):
         self._num_surrogate_model_updates = 0
         self._next_surrogate_model_update_iter = 1
         self._next_iter_update_rule = control_settings.update_interval_rule
+        self._overwrite_checkpoint = control_settings.overwrite_checkpoint
 
         self._input_training_data = []
         self._output_training_data = []
         self._training_data_available = threading.Event()
         self._data_lock = threading.Lock()
         self._surrogate_lock = threading.Lock()
-
-        self._checkpoint_save_path = control_settings.checkpoint_save_path
-        self._overwrite_checkpoint = control_settings.overwrite_checkpoint
-        if control_settings.checkpoint_load_file is not None:
-            self._load_checkpoint(control_settings.checkpoint_load_file)
 
         self._surrogate_update_thread = self._init_surrogate_model_update_thread()
 
@@ -137,7 +125,6 @@ class SurrogateControl(ub.Model):
                 self._retrain_surrogate()
                 scale, correlation_length = self._surrogate_model.scale_and_correlation_length
                 self._surrogate_model.save_checkpoint(checkpoint_id)
-                self._save_checkpoint(checkpoint_id)
                 self._num_saved_checkpoints += 1
             else:
                 new_fit = False
@@ -199,24 +186,6 @@ class SurrogateControl(ub.Model):
             self._output_training_data.clear()
             self._surrogate_model.update_training_data(input_array, output_array)
             self._training_data_available.clear()
-
-    # ----------------------------------------------------------------------------------------------
-    def _load_checkpoint(self, checkpoint_load_file):
-        with open(checkpoint_load_file, "rb") as checkpoint_file:
-            checkpoint = pickle.load(checkpoint_file)
-        self._num_surrogate_model_updates = checkpoint.num_completed_updates
-        self._next_surrogate_model_update_iter = checkpoint.next_update_iter
-        self._num_generated_training_points = checkpoint.input_data.shape[1]
-
-    # ----------------------------------------------------------------------------------------------
-    def _save_checkpoint(self, checkpoint_id):
-        checkpoint = Checkpoint(
-            num_completed_updates=self._num_surrogate_model_updates,
-            next_update_iter=self._next_surrogate_model_update_iter,
-        )
-        utils.save_checkpoint_pickle(
-            self._checkpoint_save_path, "control_checkpoint", checkpoint, checkpoint_id
-        )
 
     # ----------------------------------------------------------------------------------------------
     def _get_checkpoint_id(self):

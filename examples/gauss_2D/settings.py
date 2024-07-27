@@ -43,8 +43,6 @@ surrogate_control_settings = surrogate_control.ControlSettings(
     minimum_num_training_points=0,
     variance_threshold=1e-9,
     update_interval_rule=lambda num_updates: num_updates + 1,
-    checkpoint_load_file=None,
-    checkpoint_save_path=Path("results_example_gauss_2D"),
     overwrite_checkpoint=False,
 )
 
