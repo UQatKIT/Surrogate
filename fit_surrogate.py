@@ -33,18 +33,18 @@ def main():
     settings = importlib.import_module(settings_module)
 
     surrogate_settings = settings.surrogate_model_settings
-    # surrogate_settings.checkpoint_load_file = None
+    surrogate_settings.checkpoint_load_file = None
     surrogate_settings.checkpoint_save_path = None
 
     surrogate_model = settings.surrogate_model_type(settings.surrogate_model_settings)
 
-    surrogate_model.load_checkpoint(surrogate_settings.checkpoint_load_file)
-    print("fitting the surrogate model...")
-    surrogate_model.fit()
+    # surrogate_model.load_checkpoint(surrogate_settings.checkpoint_load_file)
+    # print("Fitting the surrogate model...")
+    # surrogate_model.fit()
 
-    # visualizer = visualization.Visualizer(settings.visualization_settings, surrogate_model)
-    # print("Run visualization...")
-    # visualizer.run()
+    visualizer = visualization.Visualizer(settings.visualization_settings, surrogate_model)
+    print("Run visualization with training...")
+    visualizer.run()
 
 
 if __name__ == "__main__":
