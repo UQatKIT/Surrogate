@@ -1,4 +1,5 @@
 import logging
+import os
 import pickle
 import sys
 import threading
@@ -87,6 +88,44 @@ def save_checkpoint_pickle(path, filename, checkpoint, checkpoint_id):
         with open(checkpoint_file, "wb") as cp_file:
             pickle.dump(checkpoint, cp_file)
 
+
+# --------------------------------------------------------------------------------------------------
+def find_checkpoints_in_dir(filestub):
+    files = []
+    checkpoint_ids = []
+    for object in os.scandir(filestub.parent):
+        if (
+            object.is_file()
+            and filestub.name in object.name
+            and any(char.isdecimal() for char in object.name)
+        ):
+            checkpoint_id = ""
+            for char in object.name:
+                if char.isdecimal():
+                    checkpoint_id += char
+            checkpoint_id = int(checkpoint_id)
+            files.append(object)
+            checkpoint_ids.append(checkpoint_id)
+    
+    sorted_files = sorted(files, key=lambda ids: checkpoint_ids[files.index(ids)])
+    return sorted_files
+
+# ----------------------------------------------------------------------------------------------
+def process_mean_std(surrogate, params):
+    mean, variance = surrogate.predict_and_estimate_variance(params)
+
+    if surrogate.variance_is_relative:
+        if surrogate.variance_reference is not None:
+            reference_variance = surrogate.variance_reference
+        else:
+            reference_variance = np.maximum(surrogate.output_data_range**2, 1e-6)
+        variance /= np.sqrt(reference_variance)
+
+    std = np.sqrt(variance)
+    if surrogate.log_transformed:
+        mean = np.exp(mean)
+
+    return mean, std
 
 # --------------------------------------------------------------------------------------------------
 def convert_list_to_array(input_list):
