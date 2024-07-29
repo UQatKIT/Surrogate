@@ -79,7 +79,6 @@ test_client_settings = test_client.TestClientSettings(
 
 # --------------------------------------------------------------------------------------------------
 visualization_settings = visualization.VisualizationSettings(
-    online_checkpoint_path=Path("results_seissol_zihua_2D_T19"),
     offline_checkpoint_file=Path("results_seissol_zihua_2D_T18/surrogate_checkpoint_2.pkl"),
     online_checkpoint_filestub=Path("results_seissol_zihua_2D_T19/surrogate_checkpoint"),
     visualization_file=Path("results_seissol_zihua_2D_T19/visualization.pdf"),
