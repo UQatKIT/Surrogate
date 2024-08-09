@@ -203,6 +203,10 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     @property
     def training_data(self):
         return self._training_input, self._training_output
+    
+    @training_data.setter
+    def training_data(self, data):
+        self._training_input, self._training_output = data
 
     # ----------------------------------------------------------------------------------------------
     @property

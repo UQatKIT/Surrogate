@@ -33,12 +33,16 @@ class Visualizer:
         if self._visualization_file is not None:
             if not self._visualization_file.parent.is_dir():
                 self._visualization_file.parent.mkdir(parents=True, exist_ok=True)
-            checkpoint_files = utils.find_checkpoints_in_dir(self._online_checkpoint_filestub)
+            if self._online_checkpoint_filestub is not None:
+                checkpoint_files = utils.find_checkpoints_in_dir(self._online_checkpoint_filestub)
+            else:
+                checkpoint_files = []
 
             with PdfPages(self._visualization_file) as pdf:
                 if self._offline_checkpoint_file is not None:
                     self._test_surrogate.load_checkpoint(self._offline_checkpoint_file)
                     self._visualize_checkpoint(pdf, self._offline_checkpoint_file.name)
+
 
                 for file in checkpoint_files:
                     self._test_surrogate.load_checkpoint(file)
