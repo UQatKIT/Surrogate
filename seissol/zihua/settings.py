@@ -12,8 +12,8 @@ import src.surrogate.utilities as utils
 
 # ==================================================================================================
 simulation_model_settings = utils.SimulationModelSettings(
-    url="http://localhost:4343",
-    name="QueuingModel",
+    url="http://localhost:4242",
+    name="forward",
 )
 
 surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
@@ -57,7 +57,7 @@ control_logger_settings = utils.LoggerSettings(
 pretraining_settings = offline_training.OfflineTrainingSettings(
     num_offline_training_points=10,
     num_threads=5,
-    offline_model_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": 3},
+    offline_model_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": "3"},
     lhs_bounds=[[0.5, 2.5]],
     lhs_seed=0,
     checkpoint_save_name="pretraining",
@@ -73,7 +73,7 @@ pretraining_logger_settings = utils.LoggerSettings(
 test_client_settings = test_client.TestClientSettings(
     control_url="http://localhost:4243",
     control_name="surrogate",
-    simulation_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": 3},
+    simulation_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": "3"},
     training_params=np.random.uniform(0.5, 2.5, (5, 1)),
 )
 
