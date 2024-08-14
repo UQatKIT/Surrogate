@@ -21,7 +21,7 @@ surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
 surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     scaling_kernel=ConstantKernel(constant_value=0.5, constant_value_bounds=(1e-5, 1e5)),
     correlation_kernel=RBF(length_scale=(1, 1), length_scale_bounds=((1e-5, 1e5),(1e-5, 1e5))),
-    data_noise=1e-6,
+    data_noise=1e-3,
     num_optimizer_restarts=3,
     minimum_num_training_points=3,
     normalize_output=False,
@@ -79,7 +79,7 @@ test_client_settings = test_client.TestClientSettings(
 
 # --------------------------------------------------------------------------------------------------
 visualization_settings = visualization.VisualizationSettings(
-    offline_checkpoint_file=Path("results_seissol_zihua_2D_T18/surrogate_checkpoint_2.pkl"),
+    offline_checkpoint_file=Path("results_seissol_zihua_2D_T5/surrogate_checkpoint_2.pkl"),
     online_checkpoint_filestub=Path("results_seissol_zihua_2D_T19/surrogate_checkpoint"),
     visualization_file=Path("results_seissol_zihua_2D_T19/visualization.pdf"),
     visualization_points=np.column_stack(
