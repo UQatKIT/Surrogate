@@ -20,7 +20,7 @@ surrogate_model_type = surrogate_model.SKLearnGPSurrogateModel
 
 surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     scaling_kernel=ConstantKernel(constant_value=0.5, constant_value_bounds=(1e-5, 1e5)),
-    correlation_kernel=RBF(length_scale=(1, 1), length_scale_bounds=((1e-5, 1e5))),
+    correlation_kernel=RBF(length_scale=(1, 1), length_scale_bounds=(1e-5, 1e5)),
     data_noise=1e-6,
     num_optimizer_restarts=3,
     minimum_num_training_points=3,
@@ -55,7 +55,7 @@ control_logger_settings = utils.LoggerSettings(
 
 # --------------------------------------------------------------------------------------------------
 pretraining_settings = offline_training.OfflineTrainingSettings(
-    num_offline_training_points=10,
+    num_offline_training_points=2,
     num_threads=5,
     offline_model_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": "3"},
     lhs_bounds=[[0.5, 2.5]],
@@ -74,7 +74,7 @@ test_client_settings = test_client.TestClientSettings(
     control_url="http://localhost:4243",
     control_name="surrogate",
     simulation_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": "3"},
-    training_params=np.random.uniform(0.5, 2.5, (5, 1)),
+    training_params=np.random.uniform(0.5, 2.5, 5),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -82,7 +82,5 @@ visualization_settings = visualization.VisualizationSettings(
     offline_checkpoint_file=Path("ridgecrest_1D_T5/surrogate_checkpoint_0.pkl"),
     online_checkpoint_filestub=Path("ridgecrest_1D_T10/surrogate_checkpoint"),
     visualization_file=Path("ridgecrest_1D_T10/visualization.pdf"),
-    visualization_points=np.column_stack(
-        (np.repeat(np.linspace(0.5, 2.5, 100), 100))
-    ),
+    visualization_points=np.linspace(0.5, 2.5, 100).reshape(-1,1),
 )
