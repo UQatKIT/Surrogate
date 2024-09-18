@@ -41,8 +41,8 @@ surrogate_control_settings = surrogate_control.ControlSettings(
     name="surrogate",
     port=4243,
     minimum_num_training_points=0,
-    variance_threshold=1e-9,
     update_interval_rule=lambda num_updates: num_updates + 1,
+    variance_threshold=1e-9,
     overwrite_checkpoint=False,
 )
 

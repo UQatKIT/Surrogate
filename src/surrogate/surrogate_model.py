@@ -142,6 +142,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     def predict_and_estimate_variance(self, parameters):
         mean, standard_deviation = self._gp_model.predict(parameters, return_std=True)
         variance = standard_deviation**2
+        
 
         if self._perform_log_transform:
             mean = np.where(mean <= self._mean_underflow_value, self._mean_underflow_value, mean)

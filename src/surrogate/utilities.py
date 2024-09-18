@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import umbridge as ub
+from scipy.stats import qmc
 
 
 # ==================================================================================================
@@ -106,37 +107,14 @@ def find_checkpoints_in_dir(filestub):
             checkpoint_id = int(checkpoint_id)
             files.append(object)
             checkpoint_ids.append(checkpoint_id)
-    
+
     sorted_files = sorted(files, key=lambda ids: checkpoint_ids[files.index(ids)])
     return sorted_files
 
-# ----------------------------------------------------------------------------------------------
-def process_mean_std(surrogate, params):
-    mean, variance = surrogate.predict_and_estimate_variance(params)
-
-    if surrogate.variance_is_relative:
-        if surrogate.variance_reference is not None:
-            reference_variance = surrogate.variance_reference
-        else:
-            reference_variance = np.maximum(surrogate.output_data_range**2, 1e-6)
-        variance /= np.sqrt(reference_variance)
-
-    std = np.sqrt(variance)
-    if surrogate.log_transformed:
-        mean = np.exp(mean)
-
-    return mean, std
 
 # --------------------------------------------------------------------------------------------------
 def convert_list_to_array(input_list):
     array = np.array(input_list).reshape(1, len(input_list))
-    return array
-
-
-# --------------------------------------------------------------------------------------------------
-def convert_nested_list_to_array(input_list):
-    flattened_list = [value for sublist in input_list for value in sublist]
-    array = convert_list_to_array(flattened_list)
     return array
 
 
@@ -153,3 +131,29 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
             time.sleep(10)
 
     return ub_server
+
+
+# --------------------------------------------------------------------------------------------------
+def process_mean_std(surrogate, params):
+    mean, variance = surrogate.predict_and_estimate_variance(params)
+
+    if surrogate.variance_is_relative:
+        if surrogate.variance_reference is not None:
+            reference_variance = surrogate.variance_reference
+        else:
+            reference_variance = np.maximum(surrogate.output_data_range**2, 1e-6)
+        variance /= np.sqrt(reference_variance)
+
+    std = np.sqrt(variance)
+    if surrogate.log_transformed:
+        mean = np.exp(mean)
+
+    return mean, std
+
+
+# --------------------------------------------------------------------------------------------------
+def generate_lhs_samples(dimension, num_samples, lower_bounds, upper_bounds, seed):
+    lhs_sampler = qmc.LatinHypercube(d=dimension, seed=seed)
+    lhs_samples = lhs_sampler.random(n=num_samples)
+    lhs_samples = qmc.scale(lhs_samples, lower_bounds, upper_bounds)
+    return lhs_samples
