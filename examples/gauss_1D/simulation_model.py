@@ -53,8 +53,8 @@ class GaussianLogLikelihood(ub.Model):
     def __init__(self, sleep_times: list[float]) -> None:
         super().__init__("forward")
         self._time_coarse, self._time_fine = sleep_times
-        self._mean = 5e6
-        self._covariance = 1e12
+        self._mean = 0
+        self._covariance = 0.5
 
     def get_input_sizes(self, config: dict[str, Any] = {}) -> list[int]:
         return [1]

@@ -81,7 +81,5 @@ visualization_settings = visualization.VisualizationSettings(
     offline_checkpoint_file=Path("results_example_gauss_2D/surrogate_checkpoint_pretraining.pkl"),
     online_checkpoint_filestub=Path("results_example_gauss_2D/surrogate_checkpoint"),
     visualization_file=Path("results_example_gauss_2D/visualization.pdf"),
-    visualization_points=np.column_stack(
-        (np.repeat(np.linspace(-1, 1, 100), 100), np.tile(np.linspace(-1, 1, 100), 100))
-    ),
+    visualization_bounds=2 * [(-1, 1),]
 )

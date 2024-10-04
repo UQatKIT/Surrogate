@@ -5,7 +5,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from scipy.interpolate import griddata
 
 from . import utilities as utils
 
@@ -57,18 +56,41 @@ class Visualizer:
     def _visualize_checkpoint(self, pdf_file, name):
         if self._param_dim == 1:
             self._visualize_checkpoint_1D(pdf_file, name)
+        elif self._param_dim == 2:
+            self._visualize_chackpoint_2D(pdf_file, name)
         else:
             self._visualize_checkpoint_ND(pdf_file, name)
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_1D(self, pdf, name):
         param_values = np.linspace(*self._visualization_bounds[0], 1000)
-        mean, std = utils.process_mean_std(self._test_surrogate, param_values)
+        mean, std = utils.process_mean_std(self._test_surrogate, param_values.reshape(-1, 1))
         training_data = self._test_surrogate.training_data
 
         fig, ax = plt.subplots(layout="constrained")
         fig.suptitle(name)
         self._visualize_1D(ax, 0, param_values, mean, std, training_data)
+        pdf.savefig(fig)
+        plt.close(fig)
+
+    def _visualize_chackpoint_2D(self, pdf, name):
+        self._visualization_bounds[0]
+        param_1_values = np.linspace(*self._visualization_bounds[0], 100)
+        param_2_values = np.linspace(*self._visualization_bounds[0], 100)
+        param_values = np.column_stack(
+            (np.repeat(param_1_values, 100), np.tile(param_2_values, 100))
+        )
+        mean, std = utils.process_mean_std(self._test_surrogate, param_values)
+        grid_x, grid_y = np.meshgrid(param_1_values, param_2_values)
+        mean = mean.reshape((100, 100)).T
+        std = std.reshape((100, 100)).T
+
+        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), layout="constrained")
+        fig.suptitle(name)
+        self._visualize_2D(
+            axs[0], (0, 1), (grid_x, grid_y), mean, self._test_surrogate.training_data[0]
+        )
+        self._visualize_2D(axs[1], (0, 1), (grid_x, grid_y), std)
         pdf.savefig(fig)
         plt.close(fig)
 
