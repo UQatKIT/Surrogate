@@ -3,15 +3,17 @@ import os
 import time
 from typing import Any
 
+import numpy as np
 import umbridge as ub
+from scipy.linalg import block_diag
 
 
 # ==================================================================================================
 def process_cli_arguments() -> bool:
     argParser = argparse.ArgumentParser(
-        prog="loglikelihood_gauss.py",
+        prog="simulation_model.py",
         usage="python %(prog)s [options]",
-        description="Umbridge server-side client emulating Gaussian log-likelihood",
+        description="Umbridge server-side client emulating 6D Gaussian density",
     )
 
     argParser.add_argument(
@@ -32,32 +34,34 @@ def process_cli_arguments() -> bool:
 
     argParser.add_argument(
         "-t",
-        "--sleep_times",
+        "--sleep_time",
         type=float,
         required=False,
-        nargs=2,
-        default=[0.005, 0.05],
-        help="Sleep times to emulate simulation",
+        default=0.001,
+        help="Sleep time to emulate simulation",
     )
 
     cliArgs = argParser.parse_args()
     run_on_hq = cliArgs.hyperqueue
     local_port = cliArgs.port
-    sleep_times = cliArgs.sleep_times
+    sleep_time = cliArgs.sleep_time
 
-    return run_on_hq, local_port, sleep_times
+    return run_on_hq, local_port, sleep_time
 
 
 # ==================================================================================================
-class GaussianLogLikelihood(ub.Model):
-    def __init__(self, sleep_times: list[float]) -> None:
+class Gaussian6D(ub.Model):
+    def __init__(self, sleep_time: float) -> None:
         super().__init__("forward")
-        self._time_coarse, self._time_fine = sleep_times
-        self._mean = 0
-        self._covariance = 0.5
+        self._sleep_time = sleep_time
+        self._mean = np.array(6 * (0,))
+        covariance = block_diag(
+            [[0.5, 0.05], [0.05, 0.5]], [[1, 0], [0, 1]], [[0.5, 0.05], [0.05, 0.5]]
+        )
+        self._precision = np.linalg.inv(covariance)
 
     def get_input_sizes(self, config: dict[str, Any] = {}) -> list[int]:
-        return [1]
+        return [6]
 
     def get_output_sizes(self, config: dict[str, Any] = {}) -> list[int]:
         return [1]
@@ -68,14 +72,9 @@ class GaussianLogLikelihood(ub.Model):
     def __call__(
         self, parameters: list[list[float]], config: dict[str, Any] = {}
     ) -> list[list[float]]:
-        if config["order"] == 4:
-            time.sleep(self._time_coarse)
-        if config["order"] == 5:
-            time.sleep(self._time_fine)
-
-        state_diff = parameters[0][0] - self._mean
-        log_likelihood = -0.5 * state_diff**2 / self._covariance
-        return [[log_likelihood]]
+        misfit = np.array(parameters[0]) - self._mean
+        logp = -0.5 * misfit.T @ self._precision @ misfit
+        return [[logp]]
 
 
 # ==================================================================================================
@@ -88,7 +87,7 @@ def main():
 
     ub.serve_models(
         [
-            GaussianLogLikelihood(sleep_times),
+            Gaussian6D(sleep_times),
         ],
         port=port,
         max_workers=100,

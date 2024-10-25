@@ -1,8 +1,6 @@
-import pickle
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 import umbridge as ub
@@ -16,8 +14,8 @@ class ControlSettings:
     port: str
     name: str
     minimum_num_training_points: int
-    variance_threshold: float
     update_interval_rule: Callable
+    variance_threshold: float
     overwrite_checkpoint: bool = True
 
 
