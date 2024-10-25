@@ -166,7 +166,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
         with open(checkpoint_load_file, "rb") as checkpoint_file:
             checkpoint = pickle.load(checkpoint_file)
             self._training_input = checkpoint.input_data
-            self._training_output = checkpoint.output_data#**(1/2)
+            self._training_output = checkpoint.output_data**(1.0)
             #print(self._training_output)
             self._min_output_data = np.min(self._training_output, axis=0)
             self._max_output_data = np.max(self._training_output, axis=0)

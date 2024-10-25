@@ -55,7 +55,7 @@ control_logger_settings = utils.LoggerSettings(
 
 # --------------------------------------------------------------------------------------------------
 pretraining_settings = offline_training.OfflineTrainingSettings(
-    num_offline_training_points=10,
+    num_offline_training_points=2,
     num_threads=5,
     offline_model_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": 3},
     lhs_bounds=[[0.5, 2.5]],
@@ -74,7 +74,7 @@ test_client_settings = test_client.TestClientSettings(
     control_url="http://localhost:4243",
     control_name="surrogate",
     simulation_config={"meshFile": "Ridgecrest_NewModel1_f200_topo1000_noRef_xml_UBC","order": 3},
-    training_params=np.random.uniform(0.5, 2.5, 5),
+    training_params=np.random.uniform(0.5, 2.5, 2),
 )
 
 # --------------------------------------------------------------------------------------------------

@@ -34,7 +34,7 @@ surrogate_model_settings = surrogate_model.SKLearnGPSettings(
     init_seed=0,
     checkpoint_load_file="ridgecrest_2D_T5/surrogate_checkpoint_0.pkl",
     #checkpoint_load_file=None,
-    checkpoint_save_path=Path("ridgecrest_2D_T10"),
+    checkpoint_save_path=Path("ridgecrest_2D_T28"),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ surrogate_control_settings = surrogate_control.ControlSettings(
 
 control_logger_settings = utils.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("ridgecrest_2D_T10/online.log"),
+    logfile_path=Path("ridgecrest_2D_T28/online.log"),
     write_mode="w",
 )
 
@@ -65,7 +65,7 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
 
 pretraining_logger_settings = utils.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("ridgecrest_2D_T10/pretraining.log"),
+    logfile_path=Path("ridgecrest_2D_T28/pretraining.log"),
     write_mode="w",
 )
 
@@ -80,8 +80,8 @@ test_client_settings = test_client.TestClientSettings(
 # --------------------------------------------------------------------------------------------------
 visualization_settings = visualization.VisualizationSettings(
     offline_checkpoint_file=Path("ridgecrest_2D_T5/surrogate_checkpoint_0.pkl"),
-    online_checkpoint_filestub=Path("ridgecrest_2D_T10/surrogate_checkpoint"),
-    visualization_file=Path("ridgecrest_2D_T10/visualization.pdf"),
+    online_checkpoint_filestub=Path("ridgecrest_2D_T28/surrogate_checkpoint"),
+    visualization_file=Path("ridgecrest_2D_T28/visualization.pdf"),
     visualization_points=np.column_stack(
         (np.repeat(np.linspace(0.5, 2.5, 100), 100), np.tile(np.linspace(0.3, 0.9, 100), 100))
     ),
