@@ -1,83 +1,42 @@
-# ====================================== General Configuration =====================================
 [project]
 name = "surrogate"
-version = "0.1.0"
-description = "Umbridge Surrogate Server"
+version = "1.0.0"
+description = "Umbridge service for a greedy, asynchronous surrogate model"
 readme = "README.md"
-license = {text = "GNU GPLv3"}
 authors = [
     {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
     {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
 ]
-
-requires-python = ">=3.9"
+license = {text = "MIT"}
+requires-python = ">=3.12"
 dependencies = [
-    "numpy>=1.26",
-    "scipy>=1.1.12",
-    "scikit-learn>=1.4",
-    "umbridge>=1.2"
+    "numpy>=2.2.0",
+    "scikit-learn>=1.6.0",
+    "scipy>=1.14.1",
+    "umbridge>=1.2.4",
 ]
 
-#---------------------------------------------------------------------------------------------------
 [project.optional-dependencies]
-model = [
-    
-]
-postprocessing = [
-    "matplotlib>=3.8"
+development = [
+    "ruff>=0.8.2",
 ]
 notebook = [
-    "jupyter>=1.0",
-    "pandas>=2.2"
+    "jupyter>=1.1.1",
+    "pandas>=2.2.3",
 ]
-style = [
-    "ruff>=0.3",
-    "black>=24.3",
-    "mypy>=1.9",
+postprocessing = [
+    "matplotlib>=3.9.3",
+    "seaborn>=0.13.2",
 ]
 
-#---------------------------------------------------------------------------------------------------
 [build-system]
-requires = ["setuptools>=58", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-# =============================================== Ruff =============================================
 [tool.ruff]
 line-length = 100
-src = ["src"]
-select = ["E", "F", "UP", "D",]
-ignore = []
-fixable = ["ALL"]
-unfixable = []
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
 
-#---------------------------------------------------------------------------------------------------
-[tool.ruff.pydocstyle]
-convention = "google"
-
-
-# =============================================== Black ============================================
-[tool.black]
-line-length = 100
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["EM101", "EM102", "TRY003", "COM812", "RET504", "S101", "PD008"]
+pydocstyle.convention = "google"

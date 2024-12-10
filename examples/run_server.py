@@ -3,19 +3,18 @@ import importlib
 
 import umbridge as ub
 
-import src.surrogate.surrogate_control as surrogate_control
-import src.surrogate.utilities as utils
+from surrogate import surrogate_control, utilities
 
 
 # ==================================================================================================
-def process_cli_arguments():
-    argParser = argparse.ArgumentParser(
+def process_cli_arguments() -> str:
+    arg_parser = argparse.ArgumentParser(
         prog="run_server.py",
         usage="python %(prog)s [options]",
         description="Run file for Umbridge surrogate",
     )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         "-app",
         "--application",
         type=str,
@@ -23,20 +22,20 @@ def process_cli_arguments():
         help="Application directory",
     )
 
-    cliArgs = argParser.parse_args()
-    application_dir = cliArgs.application.replace("/", ".").strip(".")
+    cli_args = arg_parser.parse_args()
+    application_dir = cli_args.application.replace("/", ".").strip(".")
 
     return application_dir
 
 
 # ==================================================================================================
-def main():
+def main() -> None:
     application_dir = process_cli_arguments()
     settings_module = f"{application_dir}.settings"
     settings_module = importlib.import_module(settings_module)
 
     surrogate_model = settings_module.surrogate_model_type(settings_module.surrogate_model_settings)
-    simulation_model = utils.request_umbridge_server(
+    simulation_model = utilities.request_umbridge_server(
         settings_module.simulation_model_settings.url,
         settings_module.simulation_model_settings.name,
     )

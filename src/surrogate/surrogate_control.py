@@ -1,11 +1,12 @@
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import umbridge as ub
 
-from . import utilities as utils
+from . import surrogate_model, utilities
 
 
 # ==================================================================================================
@@ -41,7 +42,13 @@ class UpdateInfo:
 # ==================================================================================================
 class SurrogateControl(ub.Model):
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, control_settings, logger_settings, surrogate_model, simulation_model):
+    def __init__(
+        self,
+        control_settings: ControlSettings,
+        logger_settings: utilities.LoggerSettings,
+        surrogate_model: surrogate_model.BaseSurrogateModel,
+        simulation_model: Callable,
+    ) -> None:
         super().__init__(control_settings.name)
 
         self._logger = SurrogateLogger(logger_settings)
@@ -68,19 +75,19 @@ class SurrogateControl(ub.Model):
         self._surrogate_update_thread = self._init_surrogate_model_update_thread()
 
     # ----------------------------------------------------------------------------------------------
-    def get_input_sizes(self, config):
+    def get_input_sizes(self, _config: dict[str, Any]) -> list[int]:
         return self._input_sizes
 
     # ----------------------------------------------------------------------------------------------
-    def get_output_sizes(self, config):
+    def get_output_sizes(self, _config: dict[str, Any]) -> list[int]:
         return self._output_sizes
 
     # ----------------------------------------------------------------------------------------------
-    def supports_evaluate(self):
+    def supports_evaluate(self) -> bool:
         return True
 
     # ----------------------------------------------------------------------------------------------
-    def __call__(self, parameters, config):
+    def __call__(self, parameters: list[list[float]], config: dict[str, Any]) -> list[list[float]]:
         if self._num_generated_training_points < self._minimum_num_training_points:
             surrogate_result = None
             simulation_result = self._simulation_model(parameters, config)[0]
@@ -109,10 +116,10 @@ class SurrogateControl(ub.Model):
             self._num_generated_training_points,
         )
         self._logger.log_control_call_info(call_info)
-        return result_list + [[int(surrogate_used)]]
+        return [*result_list, [int(surrogate_used)]]
 
     # ----------------------------------------------------------------------------------------------
-    def update_surrogate_model_daemon(self):
+    def update_surrogate_model_daemon(self) -> None:
         while True:
             self._training_data_available.wait()
             self._tap_training_data()
@@ -138,21 +145,21 @@ class SurrogateControl(ub.Model):
             self._logger.log_surrogate_update_info(update_info)
 
     # ----------------------------------------------------------------------------------------------
-    def _init_surrogate_model_update_thread(self):
+    def _init_surrogate_model_update_thread(self) -> threading.Thread:
         update_thread = threading.Thread(target=self.update_surrogate_model_daemon, daemon=True)
         update_thread.start()
         return update_thread
 
     # ----------------------------------------------------------------------------------------------
-    def _call_surrogate(self, parameters):
+    def _call_surrogate(self, parameters: list[list[float]]) -> np.ndarray:
         with self._surrogate_lock:
-            parameter_array = utils.convert_list_to_array(parameters[0])
+            parameter_array = utilities.convert_list_to_array(parameters[0])
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
 
         return result, variance
 
     # ----------------------------------------------------------------------------------------------
-    def _retrain_surrogate(self):
+    def _retrain_surrogate(self) -> None:
         with self._surrogate_lock:
             try:
                 self._surrogate_model.fit()
@@ -164,10 +171,12 @@ class SurrogateControl(ub.Model):
             )
 
     # ----------------------------------------------------------------------------------------------
-    def _queue_training_data(self, parameters, result):
+    def _queue_training_data(
+        self, parameters: list[list[float]], result: list[list[float]]
+    ) -> None:
         with self._data_lock:
-            input_array = utils.convert_list_to_array(parameters[0])
-            output_array = utils.convert_list_to_array(result)
+            input_array = utilities.convert_list_to_array(parameters[0])
+            output_array = utilities.convert_list_to_array(result)
             self._input_training_data.append(input_array)
             self._output_training_data.append(output_array)
 
@@ -176,28 +185,25 @@ class SurrogateControl(ub.Model):
                 self._training_data_available.set()
 
     # ----------------------------------------------------------------------------------------------
-    def _tap_training_data(self):
+    def _tap_training_data(self) -> None:
         with self._data_lock:
-            input_array = np.row_stack(self._input_training_data)
-            output_array = np.row_stack(self._output_training_data)
+            input_array = np.vstack(self._input_training_data)
+            output_array = np.vstack(self._output_training_data)
             self._input_training_data.clear()
             self._output_training_data.clear()
             self._surrogate_model.update_training_data(input_array, output_array)
             self._training_data_available.clear()
 
     # ----------------------------------------------------------------------------------------------
-    def _get_checkpoint_id(self):
-        if self._overwrite_checkpoint:
-            checkpoint_id = None
-        else:
-            checkpoint_id = self._num_saved_checkpoints
+    def _get_checkpoint_id(self) -> int:
+        checkpoint_id = None if self._overwrite_checkpoint else self._num_saved_checkpoints
         return checkpoint_id
 
 
 # ==================================================================================================
-class SurrogateLogger(utils.BaseLogger):
+class SurrogateLogger(utilities.BaseLogger):
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, logger_settings) -> None:
+    def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
         super().__init__(logger_settings)
         self.print_header()
 
@@ -241,7 +247,7 @@ class SurrogateLogger(utils.BaseLogger):
                 f"Sur: {surrogate_result_str} | "
                 f"Sim: {simulation_result_str} | "
                 f"Var: {variance_str} | "
-                f"SU: {str(call_info.surrogate_used):<5} | "
+                f"SU: {call_info.surrogate_used!s:<5} | "
                 f"N: {call_info.num_training_points:<12.3e}"
             )
             self._pylogger.info(output_str)
@@ -253,7 +259,7 @@ class SurrogateLogger(utils.BaseLogger):
             corr_length_str = self._process_value_str(update_info.correlation_length, "<12.3e")
             output_str = (
                 "[update] "
-                f"New: {str(update_info.new_fit):<5} | "
+                f"New: {update_info.new_fit!s:<5} | "
                 f"Num: {update_info.num_updates:<12.3e} | "
                 f"Next: {update_info.next_update:<12.3e} | "
                 f"Scale: {scale_str} | "

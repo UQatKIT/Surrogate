@@ -1,18 +1,18 @@
 import argparse
 import importlib
 
-import src.surrogate.visualization as visualization
+from surrogate import visualization
 
 
 # ==================================================================================================
-def process_cli_arguments():
-    argParser = argparse.ArgumentParser(
+def process_cli_arguments() -> str:
+    arg_parser = argparse.ArgumentParser(
         prog="run_visualization.py",
         usage="python %(prog)s [options]",
         description="Run file for visualization of surrogate checkpoints",
     )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         "-app",
         "--application",
         type=str,
@@ -20,14 +20,14 @@ def process_cli_arguments():
         help="Application directory",
     )
 
-    cliArgs = argParser.parse_args()
-    application_dir = cliArgs.application.replace("/", ".").strip(".")
+    cli_args = arg_parser.parse_args()
+    application_dir = cli_args.application.replace("/", ".").strip(".")
 
     return application_dir
 
 
 # ==================================================================================================
-def main():
+def main() -> None:
     application_dir = process_cli_arguments()
     settings_module = f"{application_dir}.settings"
     settings = importlib.import_module(settings_module)

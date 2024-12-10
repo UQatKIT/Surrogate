@@ -7,10 +7,13 @@ import time
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import umbridge as ub
 from scipy.stats import qmc
+
+from . import surrogate_model
 
 
 # ==================================================================================================
@@ -30,7 +33,7 @@ class LoggerSettings:
 # ==================================================================================================
 class BaseLogger:
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, logger_settings) -> None:
+    def __init__(self, logger_settings: LoggerSettings) -> None:
         self._lock = threading.Lock()
         self._logfile_path = logger_settings.logfile_path
         self._pylogger = logging.getLogger(__name__)
@@ -40,7 +43,6 @@ class BaseLogger:
         if not self._pylogger.hasHandlers():
             if logger_settings.do_printing:
                 console_handler = logging.StreamHandler(sys.stdout)
-                console_handler.setFormatter
                 console_handler.setLevel(logging.INFO)
                 console_handler.setFormatter(formatter)
                 self._pylogger.addHandler(console_handler)
@@ -65,7 +67,7 @@ class BaseLogger:
             self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
-    def _process_value_str(self, value, str_format):
+    def _process_value_str(self, value: float | Iterable, str_format: str) -> str:
         if isinstance(value, Iterable):
             value = np.array(value)
             value_str = [f"{val:{str_format}}" for val in np.nditer(value)]
@@ -76,7 +78,7 @@ class BaseLogger:
 
 
 # ==================================================================================================
-def save_checkpoint_pickle(path, filename, checkpoint, checkpoint_id):
+def save_checkpoint_pickle(path: Path, filename: str, checkpoint: Any, checkpoint_id: int):
     if path is not None:
         if not path.is_dir():
             path.mkdir(parents=True, exist_ok=True)
@@ -91,7 +93,7 @@ def save_checkpoint_pickle(path, filename, checkpoint, checkpoint_id):
 
 
 # --------------------------------------------------------------------------------------------------
-def find_checkpoints_in_dir(filestub):
+def find_checkpoints_in_dir(filestub: Path) -> dict[str, os.DirEntry]:
     files = []
     checkpoint_ids = []
     for object in os.scandir(filestub.parent):
@@ -113,7 +115,7 @@ def find_checkpoints_in_dir(filestub):
 
 
 # --------------------------------------------------------------------------------------------------
-def convert_list_to_array(input_list):
+def convert_list_to_array(input_list: list) -> np.ndarray:
     array = np.array(input_list).reshape(1, len(input_list))
     return array
 
@@ -134,7 +136,7 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
 
 
 # --------------------------------------------------------------------------------------------------
-def process_mean_std(surrogate, params):
+def process_mean_std(surrogate: surrogate_model.BaseSurrogateModel, params: np.ndarray):
     mean, variance = surrogate.predict_and_estimate_variance(params)
 
     if surrogate.variance_is_relative:
@@ -152,7 +154,13 @@ def process_mean_std(surrogate, params):
 
 
 # --------------------------------------------------------------------------------------------------
-def generate_lhs_samples(dimension, num_samples, lower_bounds, upper_bounds, seed):
+def generate_lhs_samples(
+    dimension: int,
+    num_samples: int,
+    lower_bounds: list[float],
+    upper_bounds: list[float],
+    seed: int,
+) -> np.ndarray:
     lhs_sampler = qmc.LatinHypercube(d=dimension, seed=seed)
     lhs_samples = lhs_sampler.random(n=num_samples)
     lhs_samples = qmc.scale(lhs_samples, lower_bounds, upper_bounds)

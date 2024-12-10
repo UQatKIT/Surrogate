@@ -1,3 +1,4 @@
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
@@ -5,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import qmc
 
-from . import utilities as utils
+from . import surrogate_model, utilities
 
 
 # ==================================================================================================
@@ -21,9 +22,14 @@ class OfflineTrainingSettings:
 
 # ==================================================================================================
 class OfflineTrainer:
-
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, training_settings, logger_settings, surrogate_model, simulation_model):
+    def __init__(
+        self,
+        training_settings: OfflineTrainingSettings,
+        logger_settings: utilities.LoggerSettings,
+        surrogate_model: surrogate_model.BaseSurrogateModel,
+        simulation_model: Callable,
+    ) -> None:
         self._logger = OfflineTrainingLogger(logger_settings)
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
@@ -37,7 +43,7 @@ class OfflineTrainer:
         self._checkpoint_save_name = training_settings.checkpoint_save_name
 
     # ----------------------------------------------------------------------------------------------
-    def run(self):
+    def run(self) -> None:
         lhs_sampler = qmc.LatinHypercube(d=self._dimension, seed=self._seed)
         lhs_samples = lhs_sampler.random(n=self._num_training_points)
         lhs_samples = qmc.scale(lhs_samples, self._lower_bounds, self._upper_bounds)
@@ -58,13 +64,13 @@ class OfflineTrainer:
                 futures.remove(future)
                 parameters = futuremap.pop(future)
                 parameters = np.array(parameters)
-                simulation_result = utils.convert_list_to_array(simulation_result)
+                simulation_result = utilities.convert_list_to_array(simulation_result)
                 training_input.append(parameters)
                 training_output.append(simulation_result)
                 self._logger.log_simulation_run(parameters, simulation_result)
 
-        training_input = np.row_stack(training_input)
-        training_output = np.row_stack(training_output)
+        training_input = np.vstack(training_input)
+        training_output = np.vstack(training_output)
 
         self._surrogate_model.update_training_data(training_input, training_output)
         self._surrogate_model.fit()
@@ -74,19 +80,20 @@ class OfflineTrainer:
 
 
 # ==================================================================================================
-class OfflineTrainingLogger(utils.BaseLogger):
-
-    def __init__(self, logger_settings) -> None:
+class OfflineTrainingLogger(utilities.BaseLogger):
+    def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
         super().__init__(logger_settings)
 
-    def log_simulation_run(self, parameter, result):
+    def log_simulation_run(self, parameter: float | Iterable, result: float) -> None:
         parameter_str = self._process_value_str(parameter, "<12.3e")
         result_str = self._process_value_str(result, "<12.3e")
-        output_str = "[sim] " f"In: {parameter_str} | " f"Out: {result_str}"
+        output_str = f"[sim] In: {parameter_str} | Out: {result_str}"
         self._pylogger.info(output_str)
 
-    def log_surrogate_fit(self, scale, correlation_length):
+    def log_surrogate_fit(
+        self, scale: float | Iterable, correlation_length: float | Iterable
+    ) -> None:
         scale_str = self._process_value_str(scale, "<12.3e")
         corr_length_str = self._process_value_str(correlation_length, "<12.3e")
-        output_str = "[fit] " f"Scale: {scale_str} | " f"Corr: {corr_length_str}"
+        output_str = f"[fit] Scale: {scale_str} | Corr: {corr_length_str}"
         self._pylogger.info(output_str)

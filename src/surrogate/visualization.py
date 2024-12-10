@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
-from . import utilities as utils
+from . import surrogate_model, utilities
 
 
 # ==================================================================================================
@@ -22,7 +22,11 @@ class VisualizationSettings:
 # ==================================================================================================
 class Visualizer:
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, visualization_settings, test_surrogate):
+    def __init__(
+        self,
+        visualization_settings: VisualizationSettings,
+        test_surrogate: surrogate_model.BaseSurrogateModel,
+    ):
         self._offline_checkpoint_file = visualization_settings.offline_checkpoint_file
         self._online_checkpoint_filestub = visualization_settings.online_checkpoint_filestub
         self._visualization_bounds = visualization_settings.visualization_bounds
@@ -32,12 +36,14 @@ class Visualizer:
         self._param_dim = len(self._visualization_bounds)
 
     # ----------------------------------------------------------------------------------------------
-    def run(self):
+    def run(self) -> None:
         if self._visualization_file is not None:
             if not self._visualization_file.parent.is_dir():
                 self._visualization_file.parent.mkdir(parents=True, exist_ok=True)
             if self._online_checkpoint_filestub is not None:
-                checkpoint_files = utils.find_checkpoints_in_dir(self._online_checkpoint_filestub)
+                checkpoint_files = utilities.find_checkpoints_in_dir(
+                    self._online_checkpoint_filestub
+                )
             else:
                 checkpoint_files = []
 
@@ -53,7 +59,7 @@ class Visualizer:
                     self._visualize_checkpoint(pdf, file.name)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_checkpoint(self, pdf_file, name):
+    def _visualize_checkpoint(self, pdf_file: PdfPages, name: str) -> None:
         if self._param_dim == 1:
             self._visualize_checkpoint_1D(pdf_file, name)
         elif self._param_dim == 2:
@@ -62,9 +68,9 @@ class Visualizer:
             self._visualize_checkpoint_ND(pdf_file, name)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_checkpoint_1D(self, pdf, name):
+    def _visualize_checkpoint_1D(self, pdf: PdfPages, name: str) -> None:
         param_values = np.linspace(*self._visualization_bounds[0], 1000)
-        mean, std = utils.process_mean_std(self._test_surrogate, param_values.reshape(-1, 1))
+        mean, std = utilities.process_mean_std(self._test_surrogate, param_values.reshape(-1, 1))
         training_data = self._test_surrogate.training_data
 
         fig, ax = plt.subplots(layout="constrained")
@@ -73,14 +79,15 @@ class Visualizer:
         pdf.savefig(fig)
         plt.close(fig)
 
-    def _visualize_chackpoint_2D(self, pdf, name):
+    # ----------------------------------------------------------------------------------------------
+    def _visualize_chackpoint_2D(self, pdf: PdfPages, name: str) -> None:
         self._visualization_bounds[0]
         param_1_values = np.linspace(*self._visualization_bounds[0], 100)
         param_2_values = np.linspace(*self._visualization_bounds[0], 100)
         param_values = np.column_stack(
             (np.repeat(param_1_values, 100), np.tile(param_2_values, 100))
         )
-        mean, std = utils.process_mean_std(self._test_surrogate, param_values)
+        mean, std = utilities.process_mean_std(self._test_surrogate, param_values)
         grid_x, grid_y = np.meshgrid(param_1_values, param_2_values)
         mean = mean.reshape((100, 100)).T
         std = std.reshape((100, 100)).T
@@ -95,7 +102,7 @@ class Visualizer:
         plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_checkpoint_ND(self, pdf, name):
+    def _visualize_checkpoint_ND(self, pdf: PdfPages, name: str) -> None:
         fig, axs = plt.subplots(
             nrows=1, ncols=self._param_dim, figsize=(6 * self._param_dim, 5), layout="constrained"
         )
@@ -111,10 +118,7 @@ class Visualizer:
         for i, j in param_ind_combs:
             structured_ind_combs[i].append((i, j))
 
-        if self._param_dim == 2:
-            training_data = self._test_surrogate.training_data[0]
-        else:
-            training_data = None
+        training_data = self._test_surrogate.training_data[0] if self._param_dim == 2 else None
 
         fig_mean, axs_mean = plt.subplots(
             nrows=self._param_dim - 1,
@@ -145,7 +149,15 @@ class Visualizer:
         plt.close(fig_std)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_1D(self, ax, ind, param_values, mean, std, training_data=None):
+    def _visualize_1D(
+        self,
+        ax: plt.axis,
+        ind: int,
+        param_values: np.ndarray,
+        mean: np.ndarray,
+        std: np.ndarray,
+        training_data: tuple[np.ndarray, np.ndarray] | None = None,
+    ) -> None:
         ax.plot(param_values, mean)
         ax.fill_between(param_values, mean - 1.96 * std, mean + 1.96 * std, alpha=0.2)
         ax.set_xlabel(rf"$\theta_{ind}$")
@@ -155,7 +167,14 @@ class Visualizer:
             ax.scatter(input_training, output_training, marker="x", color="red")
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_2D(self, ax, ind_comb, param_values, solution_values, training_data=None):
+    def _visualize_2D(
+        self,
+        ax: plt.axis,
+        ind_comb: tuple[int, int],
+        param_values: tuple[np.ndarray, np.ndarray],
+        solution_values: np.ndarray,
+        training_data: tuple[np.ndarray, np.ndarray] | None = None,
+    ) -> None:
         ax.contourf(*param_values, solution_values, levels=10, cmap="Blues")
         if training_data is not None:
             ax.scatter(training_data[:, 0], training_data[:, 1], marker="x", color="red")
@@ -163,15 +182,15 @@ class Visualizer:
         ax.set_ylabel(rf"$\theta_{ind_comb[1]}$")
 
     # ----------------------------------------------------------------------------------------------
-    def _evaluate_1D_marginal(self, param_ind):
+    def _evaluate_1D_marginal(self, param_ind: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]
-        non_active_inds = list(set(range(self._param_dim)) - set((param_ind,)))
+        non_active_inds = list(set(range(self._param_dim)) - {param_ind})
         non_active_lb = [lower_bounds[i] for i in non_active_inds]
         non_active_ub = [upper_bounds[i] for i in non_active_inds]
 
         active_ind_samples = np.linspace(lower_bounds[param_ind], upper_bounds[param_ind], 100)
-        non_active_ind_samples = utils.generate_lhs_samples(
+        non_active_ind_samples = utilities.generate_lhs_samples(
             self._param_dim - 1, 100, non_active_lb, non_active_ub, self._rng_seed
         )
         mean_values = np.zeros(100)
@@ -180,17 +199,19 @@ class Visualizer:
         for i, sample in enumerate(active_ind_samples):
             sample_array = sample * np.ones(100)
             total_samples = np.insert(non_active_ind_samples, param_ind, sample_array, axis=1)
-            mean, std = utils.process_mean_std(self._test_surrogate, total_samples)
+            mean, std = utilities.process_mean_std(self._test_surrogate, total_samples)
             mean_values[i] = np.mean(mean)
             std_values[i] = np.mean(std)
 
         return active_ind_samples, mean_values, std_values
 
     # ----------------------------------------------------------------------------------------------
-    def _evaluate_2D_marginal(self, param_ind_1, param_ind_2):
+    def _evaluate_2D_marginal(
+        self, param_ind_1: int, param_ind_2: int
+    ) -> tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]
-        non_active_inds = list(set(range(self._param_dim)) - set([param_ind_1, param_ind_2]))
+        non_active_inds = list(set(range(self._param_dim)) - {param_ind_1, param_ind_2})
         non_active_lb = [lower_bounds[i] for i in non_active_inds]
         non_active_ub = [upper_bounds[i] for i in non_active_inds]
 
@@ -198,19 +219,19 @@ class Visualizer:
         active_ind_array_2 = np.linspace(lower_bounds[param_ind_2], upper_bounds[param_ind_2], 10)
         active_inds_samples_1 = np.repeat(active_ind_array_1, 10)
         active_inds_samples_2 = np.tile(active_ind_array_2, 10)
-        non_active_ind_samples = utils.generate_lhs_samples(
+        non_active_ind_samples = utilities.generate_lhs_samples(
             self._param_dim - 2, 100, non_active_lb, non_active_ub, self._rng_seed
         )
         mean_values = np.zeros(100)
         std_values = np.zeros(100)
 
-        for i, sample in enumerate(zip(active_inds_samples_1, active_inds_samples_2)):
+        for i, sample in enumerate(zip(active_inds_samples_1, active_inds_samples_2, strict=False)):
             sample_array_1 = sample[0] * np.ones(100)
             sample_array_2 = sample[1] * np.ones(100)
             total_samples = np.insert(non_active_ind_samples, param_ind_1, sample_array_1, axis=1)
             total_samples = np.insert(total_samples, param_ind_2, sample_array_2, axis=1)
 
-            mean, std = utils.process_mean_std(self._test_surrogate, total_samples)
+            mean, std = utilities.process_mean_std(self._test_surrogate, total_samples)
             mean_values[i] = np.mean(mean)
             std_values[i] = np.mean(std)
 
