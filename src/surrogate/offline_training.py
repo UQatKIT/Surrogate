@@ -1,3 +1,4 @@
+"""_summary_."""
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -12,6 +13,16 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class OfflineTrainingSettings:
+    """_summary_.
+
+    Attributes:
+        num_offline_training_points: _summary_
+        num_threads: _summary_
+        offline_model_config: _summary_
+        lhs_bounds: _summary_
+        lhs_seed: _summary_
+        checkpoint_save_name: _summary_
+    """
     num_offline_training_points: int
     num_threads: int
     offline_model_config: dict
@@ -22,6 +33,8 @@ class OfflineTrainingSettings:
 
 # ==================================================================================================
 class OfflineTrainer:
+    """_summary_."""
+
     # ----------------------------------------------------------------------------------------------
     def __init__(
         self,
@@ -30,6 +43,14 @@ class OfflineTrainer:
         surrogate_model: surrogate_model.BaseSurrogateModel,
         simulation_model: Callable,
     ) -> None:
+        """_summary_.
+
+        Args:
+            training_settings (OfflineTrainingSettings): _description_
+            logger_settings (utilities.LoggerSettings): _description_
+            surrogate_model (surrogate_model.BaseSurrogateModel): _description_
+            simulation_model (Callable): _description_
+        """
         self._logger = OfflineTrainingLogger(logger_settings)
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
@@ -44,6 +65,7 @@ class OfflineTrainer:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
+        """_summary_."""
         lhs_sampler = qmc.LatinHypercube(d=self._dimension, seed=self._seed)
         lhs_samples = lhs_sampler.random(n=self._num_training_points)
         lhs_samples = qmc.scale(lhs_samples, self._lower_bounds, self._upper_bounds)
@@ -81,18 +103,44 @@ class OfflineTrainer:
 
 # ==================================================================================================
 class OfflineTrainingLogger(utilities.BaseLogger):
+    """_summary_.
+
+    Args:
+        utilities (_type_): _description_
+    """
+
+    # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
+        """_summary_.
+
+        Args:
+            logger_settings (utilities.LoggerSettings): _description_
+        """
         super().__init__(logger_settings)
 
+    # ----------------------------------------------------------------------------------------------
     def log_simulation_run(self, parameter: float | Iterable, result: float) -> None:
+        """_summary_.
+
+        Args:
+            parameter (float | Iterable): _description_
+            result (float): _description_
+        """
         parameter_str = self._process_value_str(parameter, "<12.3e")
         result_str = self._process_value_str(result, "<12.3e")
         output_str = f"[sim] In: {parameter_str} | Out: {result_str}"
         self._pylogger.info(output_str)
 
+    # ----------------------------------------------------------------------------------------------
     def log_surrogate_fit(
         self, scale: float | Iterable, correlation_length: float | Iterable
     ) -> None:
+        """_summary_.
+
+        Args:
+            scale (float | Iterable): _description_
+            correlation_length (float | Iterable): _description_
+        """
         scale_str = self._process_value_str(scale, "<12.3e")
         corr_length_str = self._process_value_str(correlation_length, "<12.3e")
         output_str = f"[fit] Scale: {scale_str} | Corr: {corr_length_str}"

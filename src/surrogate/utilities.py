@@ -1,3 +1,9 @@
+"""_summary_.
+
+Returns:
+    _type_: _description_
+"""
+
 import logging
 import os
 import pickle
@@ -17,12 +23,27 @@ from scipy.stats import qmc
 # ==================================================================================================
 @dataclass
 class SimulationModelSettings:
+    """_summary_.
+
+    Attributes:
+        url: str: _summary_
+        name: str: _summary
+    """
+
     url: str
     name: str
 
 
 @dataclass
 class LoggerSettings:
+    """_summary_.
+
+    Attributes:
+        do_printing: bool: _summary_
+        logfile_path: str: _summary_
+        write_mode: str: _summary_
+    """
+
     do_printing: bool = True
     logfile_path: str = None
     write_mode: str = "w"
@@ -30,8 +51,19 @@ class LoggerSettings:
 
 # ==================================================================================================
 class BaseLogger:
+    """_summary_.
+
+    Returns:
+        _type_: _description_
+    """
+
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings: LoggerSettings) -> None:
+        """_summary_.
+
+        Args:
+            logger_settings (LoggerSettings): _description_
+        """
         self._lock = threading.Lock()
         self._logfile_path = logger_settings.logfile_path
         self._pylogger = logging.getLogger(__name__)
@@ -56,16 +88,35 @@ class BaseLogger:
 
     # ----------------------------------------------------------------------------------------------
     def info(self, message: str) -> None:
+        """_summary_.
+
+        Args:
+            message (str): _description_
+        """
         with self._lock:
             self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
     def exception(self, message: str) -> None:
+        """_summary_.
+
+        Args:
+            message (str): _description_
+        """
         with self._lock:
             self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
     def _process_value_str(self, value: float | Iterable, str_format: str) -> str:
+        """_summary_.
+
+        Args:
+            value (float | Iterable): _description_
+            str_format (str): _description_
+
+        Returns:
+            str: _description_
+        """
         if isinstance(value, Iterable):
             value = np.array(value)
             value_str = [f"{val:{str_format}}" for val in np.nditer(value)]
@@ -77,6 +128,14 @@ class BaseLogger:
 
 # ==================================================================================================
 def save_checkpoint_pickle(path: Path, filename: str, checkpoint: Any, checkpoint_id: int):
+    """_summary_.
+
+    Args:
+        path (Path): _description_
+        filename (str): _description_
+        checkpoint (Any): _description_
+        checkpoint_id (int): _description_
+    """
     if path is not None:
         if not path.is_dir():
             path.mkdir(parents=True, exist_ok=True)
@@ -92,6 +151,14 @@ def save_checkpoint_pickle(path: Path, filename: str, checkpoint: Any, checkpoin
 
 # --------------------------------------------------------------------------------------------------
 def find_checkpoints_in_dir(filestub: Path) -> dict[str, os.DirEntry]:
+    """_summary_.
+
+    Args:
+        filestub (Path): _description_
+
+    Returns:
+        dict[str, os.DirEntry]: _description_
+    """
     files = []
     checkpoint_ids = []
     for object in os.scandir(filestub.parent):
@@ -114,12 +181,29 @@ def find_checkpoints_in_dir(filestub: Path) -> dict[str, os.DirEntry]:
 
 # --------------------------------------------------------------------------------------------------
 def convert_list_to_array(input_list: list) -> np.ndarray:
+    """_summary_.
+
+    Args:
+        input_list (list): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
     array = np.array(input_list).reshape(1, len(input_list))
     return array
 
 
 # --------------------------------------------------------------------------------------------------
 def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
+    """_summary_.
+
+    Args:
+        address (str): _description_
+        name (str): _description_
+
+    Returns:
+        ub.HTTPModel: _description_
+    """
     server_available = False
     while not server_available:
         try:
@@ -135,6 +219,15 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
 
 # --------------------------------------------------------------------------------------------------
 def process_mean_std(surrogate: Any, params: np.ndarray):
+    """_summary_.
+
+    Args:
+        surrogate (Any): _description_
+        params (np.ndarray): _description_
+
+    Returns:
+        _type_: _description_
+    """
     mean, variance = surrogate.predict_and_estimate_variance(params)
 
     if surrogate.variance_is_relative:
@@ -159,6 +252,18 @@ def generate_lhs_samples(
     upper_bounds: list[float],
     seed: int,
 ) -> np.ndarray:
+    """_summary_.
+
+    Args:
+        dimension (int): _description_
+        num_samples (int): _description_
+        lower_bounds (list[float]): _description_
+        upper_bounds (list[float]): _description_
+        seed (int): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
     lhs_sampler = qmc.LatinHypercube(d=dimension, seed=seed)
     lhs_samples = lhs_sampler.random(n=num_samples)
     lhs_samples = qmc.scale(lhs_samples, lower_bounds, upper_bounds)

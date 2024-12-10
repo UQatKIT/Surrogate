@@ -1,3 +1,9 @@
+"""_summary_.
+
+Returns:
+    _type_: _description_
+"""
+
 from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
@@ -12,6 +18,15 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class VisualizationSettings:
+    """_summary_.
+
+    Attributes:
+        offline_checkpoint_file: Path: _summary_
+        online_checkpoint_filestub: Path: _summary_
+        visualization_file: Path: _summary_
+        visualization_bounds: list[list[float, float]]: _summary_
+        rng_seed: int: _summary_
+    """
     offline_checkpoint_file: Path
     online_checkpoint_filestub: Path
     visualization_file: Path
@@ -21,12 +36,24 @@ class VisualizationSettings:
 
 # ==================================================================================================
 class Visualizer:
+    """_summary_.
+
+    Returns:
+        _type_: _description_
+    """
+
     # ----------------------------------------------------------------------------------------------
     def __init__(
         self,
         visualization_settings: VisualizationSettings,
         test_surrogate: surrogate_model.BaseSurrogateModel,
     ):
+        """_summary_.
+
+        Args:
+            visualization_settings (VisualizationSettings): _description_
+            test_surrogate (surrogate_model.BaseSurrogateModel): _description_
+        """
         self._offline_checkpoint_file = visualization_settings.offline_checkpoint_file
         self._online_checkpoint_filestub = visualization_settings.online_checkpoint_filestub
         self._visualization_bounds = visualization_settings.visualization_bounds
@@ -37,6 +64,7 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
+        """_summary_."""
         if self._visualization_file is not None:
             if not self._visualization_file.parent.is_dir():
                 self._visualization_file.parent.mkdir(parents=True, exist_ok=True)
@@ -60,6 +88,12 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint(self, pdf_file: PdfPages, name: str) -> None:
+        """_summary_.
+
+        Args:
+            pdf_file (PdfPages): _description_
+            name (str): _description_
+        """
         if self._param_dim == 1:
             self._visualize_checkpoint_1D(pdf_file, name)
         elif self._param_dim == 2:
@@ -69,6 +103,12 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_1D(self, pdf: PdfPages, name: str) -> None:
+        """_summary_.
+
+        Args:
+            pdf (PdfPages): _description_
+            name (str): _description_
+        """
         param_values = np.linspace(*self._visualization_bounds[0], 1000)
         mean, std = utilities.process_mean_std(self._test_surrogate, param_values.reshape(-1, 1))
         training_data = self._test_surrogate.training_data
@@ -81,6 +121,12 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_chackpoint_2D(self, pdf: PdfPages, name: str) -> None:
+        """_summary_.
+
+        Args:
+            pdf (PdfPages): _description_
+            name (str): _description_
+        """
         self._visualization_bounds[0]
         param_1_values = np.linspace(*self._visualization_bounds[0], 100)
         param_2_values = np.linspace(*self._visualization_bounds[0], 100)
@@ -103,6 +149,12 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_ND(self, pdf: PdfPages, name: str) -> None:
+        """_summary_.
+
+        Args:
+            pdf (PdfPages): _description_
+            name (str): _description_
+        """
         fig, axs = plt.subplots(
             nrows=1, ncols=self._param_dim, figsize=(6 * self._param_dim, 5), layout="constrained"
         )
@@ -158,6 +210,16 @@ class Visualizer:
         std: np.ndarray,
         training_data: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
+        """_summary_.
+
+        Args:
+            ax (plt.axis): _description_
+            ind (int): _description_
+            param_values (np.ndarray): _description_
+            mean (np.ndarray): _description_
+            std (np.ndarray): _description_
+            training_data (tuple[np.ndarray, np.ndarray] | None, optional): _description_. Defaults to None.
+        """
         ax.plot(param_values, mean)
         ax.fill_between(param_values, mean - 1.96 * std, mean + 1.96 * std, alpha=0.2)
         ax.set_xlabel(rf"$\theta_{ind}$")
@@ -175,6 +237,15 @@ class Visualizer:
         solution_values: np.ndarray,
         training_data: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
+        """_summary_.
+
+        Args:
+            ax (plt.axis): _description_
+            ind_comb (tuple[int, int]): _description_
+            param_values (tuple[np.ndarray, np.ndarray]): _description_
+            solution_values (np.ndarray): _description_
+            training_data (tuple[np.ndarray, np.ndarray] | None, optional): _description_. Defaults to None.
+        """
         ax.contourf(*param_values, solution_values, levels=10, cmap="Blues")
         if training_data is not None:
             ax.scatter(training_data[:, 0], training_data[:, 1], marker="x", color="red")
@@ -183,6 +254,14 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _evaluate_1D_marginal(self, param_ind: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """_summary_.
+
+        Args:
+            param_ind (int): _description_
+
+        Returns:
+            tuple[np.ndarray, np.ndarray, np.ndarray]: _description_
+        """
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]
         non_active_inds = list(set(range(self._param_dim)) - {param_ind})
@@ -209,6 +288,15 @@ class Visualizer:
     def _evaluate_2D_marginal(
         self, param_ind_1: int, param_ind_2: int
     ) -> tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
+        """_summary_.
+
+        Args:
+            param_ind_1 (int): _description_
+            param_ind_2 (int): _description_
+
+        Returns:
+            tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]: _description_
+        """
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]
         non_active_inds = list(set(range(self._param_dim)) - {param_ind_1, param_ind_2})

@@ -1,3 +1,9 @@
+"""_summary_.
+
+Returns:
+    _type_: _description_
+"""
+
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -12,6 +18,16 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class ControlSettings:
+    """_summary_.
+
+    Attributes:
+        port (_type_): _description_
+        name (_type_): _description_
+        minimum_num_training_points (_type_): _description_
+        update_interval_rule (_type_): _description_
+        variance_threshold (_type_): _description_
+        overwrite_checkpoint (_type_, optional): _description_. Defaults to True.
+    """
     port: str
     name: str
     minimum_num_training_points: int
@@ -22,6 +38,16 @@ class ControlSettings:
 
 @dataclass
 class CallInfo:
+    """_summary_.
+
+    Attributes:
+        parameters (_type_): _description_
+        surrogate_result (_type_): _description_
+        simulation_result (_type_): _description_
+        variance (_type_): _description_
+        surrogate_used (_type_): _description_
+        num_training_points (_type_): _description
+    """
     parameters: list
     surrogate_result: np.ndarray
     simulation_result: list
@@ -32,6 +58,15 @@ class CallInfo:
 
 @dataclass
 class UpdateInfo:
+    """_summary_.
+
+    Attributes:
+        new_fit (_type_): _description_
+        num_updates (_type_): _description_
+        next_update (_type_): _description_
+        scale (_type_): _description_
+        correlation_length (_type_): _description_
+    """
     new_fit: bool
     num_updates: int
     next_update: int
@@ -41,6 +76,15 @@ class UpdateInfo:
 
 # ==================================================================================================
 class SurrogateControl(ub.Model):
+    """_summary_.
+
+    Args:
+        ub (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
     # ----------------------------------------------------------------------------------------------
     def __init__(
         self,
@@ -49,6 +93,14 @@ class SurrogateControl(ub.Model):
         surrogate_model: surrogate_model.BaseSurrogateModel,
         simulation_model: Callable,
     ) -> None:
+        """_summary_.
+
+        Args:
+            control_settings (ControlSettings): _description_
+            logger_settings (utilities.LoggerSettings): _description_
+            surrogate_model (surrogate_model.BaseSurrogateModel): _description_
+            simulation_model (Callable): _description_
+        """
         super().__init__(control_settings.name)
 
         self._logger = SurrogateLogger(logger_settings)
@@ -76,18 +128,48 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def get_input_sizes(self, _config: dict[str, Any]) -> list[int]:
+        """_summary_.
+
+        Args:
+            _config (dict[str, Any]): _description_
+
+        Returns:
+            list[int]: _description_
+        """
         return self._input_sizes
 
     # ----------------------------------------------------------------------------------------------
     def get_output_sizes(self, _config: dict[str, Any]) -> list[int]:
+        """_summary_.
+
+        Args:
+            _config (dict[str, Any]): _description_
+
+        Returns:
+            list[int]: _description_
+        """
         return self._output_sizes
 
     # ----------------------------------------------------------------------------------------------
     def supports_evaluate(self) -> bool:
+        """_summary_.
+
+        Returns:
+            bool: _description_
+        """
         return True
 
     # ----------------------------------------------------------------------------------------------
     def __call__(self, parameters: list[list[float]], config: dict[str, Any]) -> list[list[float]]:
+        """_summary_.
+
+        Args:
+            parameters (list[list[float]]): _description_
+            config (dict[str, Any]): _description_
+
+        Returns:
+            list[list[float]]: _description_
+        """
         if self._num_generated_training_points < self._minimum_num_training_points:
             surrogate_result = None
             simulation_result = self._simulation_model(parameters, config)[0]
@@ -120,6 +202,10 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def update_surrogate_model_daemon(self) -> None:
+        """_summary_.
+
+        bla
+        """
         while True:
             self._training_data_available.wait()
             self._tap_training_data()
@@ -146,12 +232,25 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _init_surrogate_model_update_thread(self) -> threading.Thread:
+        """_summary_.
+
+        Returns:
+            threading.Thread: _description_
+        """
         update_thread = threading.Thread(target=self.update_surrogate_model_daemon, daemon=True)
         update_thread.start()
         return update_thread
 
     # ----------------------------------------------------------------------------------------------
     def _call_surrogate(self, parameters: list[list[float]]) -> np.ndarray:
+        """_summary_.
+
+        Args:
+            parameters (list[list[float]]): _description_
+
+        Returns:
+            np.ndarray: _description_
+        """
         with self._surrogate_lock:
             parameter_array = utilities.convert_list_to_array(parameters[0])
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
@@ -160,6 +259,7 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _retrain_surrogate(self) -> None:
+        """_summary_."""
         with self._surrogate_lock:
             try:
                 self._surrogate_model.fit()
@@ -174,6 +274,12 @@ class SurrogateControl(ub.Model):
     def _queue_training_data(
         self, parameters: list[list[float]], result: list[list[float]]
     ) -> None:
+        """_summary_.
+
+        Args:
+            parameters (list[list[float]]): _description_
+            result (list[list[float]]): _description_
+        """
         with self._data_lock:
             input_array = utilities.convert_list_to_array(parameters[0])
             output_array = utilities.convert_list_to_array(result)
@@ -186,6 +292,7 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _tap_training_data(self) -> None:
+        """_summary_."""
         with self._data_lock:
             input_array = np.vstack(self._input_training_data)
             output_array = np.vstack(self._output_training_data)
@@ -196,19 +303,36 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _get_checkpoint_id(self) -> int:
+        """_summary_.
+
+        Returns:
+            int: _description_
+        """
         checkpoint_id = None if self._overwrite_checkpoint else self._num_saved_checkpoints
         return checkpoint_id
 
 
 # ==================================================================================================
 class SurrogateLogger(utilities.BaseLogger):
+    """_summary_.
+
+    Args:
+        utilities (_type_): _description_
+    """
+
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
+        """_summary_.
+
+        Args:
+            logger_settings (utilities.LoggerSettings): _description_
+        """
         super().__init__(logger_settings)
         self.print_header()
 
     # ----------------------------------------------------------------------------------------------
     def print_header(self) -> None:
+        """_summary_."""
         header_str = (
             "Explanation of abbreviations:\n\n"
             "Par: Input parameters\n"
@@ -227,6 +351,11 @@ class SurrogateLogger(utilities.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def log_control_call_info(self, call_info: CallInfo) -> None:
+        """_summary_.
+
+        Args:
+            call_info (CallInfo): _description_
+        """
         with self._lock:
             parameter_str = self._process_value_str(call_info.parameters, "<12.3e")
             variance_str = self._process_value_str(call_info.variance, "<12.3e")
@@ -254,6 +383,11 @@ class SurrogateLogger(utilities.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def log_surrogate_update_info(self, update_info: UpdateInfo) -> None:
+        """_summary_.
+
+        Args:
+            update_info (UpdateInfo): _description_
+        """
         with self._lock:
             scale_str = self._process_value_str(update_info.scale, "<12.3e")
             corr_length_str = self._process_value_str(update_info.correlation_length, "<12.3e")
