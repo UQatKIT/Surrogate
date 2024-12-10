@@ -62,7 +62,7 @@ class GaussianDensity6D(ub.Model):
     ) -> list[list[float]]:
         misfit = np.array(parameters[0]) - self._mean
         logp = -0.5 * misfit.T @ self._precision @ misfit
-        return [[logp]]
+        return [[float(logp)]]
 
 
 # ==================================================================================================

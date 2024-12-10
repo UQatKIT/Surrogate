@@ -13,8 +13,6 @@ import numpy as np
 import umbridge as ub
 from scipy.stats import qmc
 
-from . import surrogate_model
-
 
 # ==================================================================================================
 @dataclass
@@ -136,7 +134,7 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
 
 
 # --------------------------------------------------------------------------------------------------
-def process_mean_std(surrogate: surrogate_model.BaseSurrogateModel, params: np.ndarray):
+def process_mean_std(surrogate: Any, params: np.ndarray):
     mean, variance = surrogate.predict_and_estimate_variance(params)
 
     if surrogate.variance_is_relative:

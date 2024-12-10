@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+
 from surrogate import (
     offline_training,
     surrogate_control,

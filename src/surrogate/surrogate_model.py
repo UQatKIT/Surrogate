@@ -1,3 +1,5 @@
+"""_summary_."""
+
 import pickle
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -13,6 +15,19 @@ from . import utilities
 # ==================================================================================================
 @dataclass
 class BaseSettings:
+    """_summary_.
+
+    Attributes:
+        minimum_num_training_points (int): _summary_.
+        perform_log_transform (bool): _summary_.
+        variance_is_relative (bool): _summary_.
+        variance_reference (float): _summary_.
+        value_range_underflow_threshold (float): _summary_.
+        log_mean_underflow_value (float): _summary_.
+        mean_underflow_value (float): _summary_.
+        checkpoint_load_file (Path): _summary_.
+        checkpoint_save_path (Path): _summary_.
+    """
     minimum_num_training_points: int
     perform_log_transform: bool
     variance_is_relative: bool
@@ -26,6 +41,16 @@ class BaseSettings:
 
 @dataclass
 class SKLearnGPSettings(BaseSettings):
+    """_summary_.
+
+    Attributes:
+        scaling_kernel (Any): _summary_.
+        correlation_kernel (Any): _summary_.
+        data_noise (float): _summary_.
+        num_optimizer_restarts (int): _summary_.
+        normalize_output (bool): _summary_.
+        init_seed (int): _summary_.
+    """
     scaling_kernel: Any
     correlation_kernel: Any
     data_noise: float
@@ -36,6 +61,13 @@ class SKLearnGPSettings(BaseSettings):
 
 @dataclass
 class SKLearnGPCheckpoint:
+    """_summary_.
+
+    Attributes:
+        input_data (np.ndarray): _summary_.
+        output_data (np.ndarray): _summary_.
+        hyperparameters (dict[str, Any]): _summary_.
+    """
     input_data: np.ndarray
     output_data: np.ndarray
     hyperparameters: dict[str, Any]
@@ -43,9 +75,19 @@ class SKLearnGPCheckpoint:
 
 # ==================================================================================================
 class BaseSurrogateModel:
+    """_summary_.
+
+    Returns:
+        _type_: _description_
+    """
 
     @abstractmethod
     def __init__(self, settings: BaseSettings) -> None:
+        """_summary_.
+
+        Args:
+            settings (BaseSettings): _summary_
+        """
         self._training_input = None
         self._training_output = None
         self._min_output_data = None
@@ -61,56 +103,73 @@ class BaseSurrogateModel:
 
     @abstractmethod
     def update_training_data(self, input_data: np.ndarray, output_data: np.ndarray) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @abstractmethod
     def fit(self) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @abstractmethod
     def predict_and_estimate_variance(self, parameters: np.ndarray, is_relative: bool) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @abstractmethod
     def load_checkpoint(self, checkpoint_load_file: Path) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @abstractmethod
     def save_checkpoint(self, checkpoint_save_path: Path) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def training_data(self) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def scale_and_correlation_length(self) -> None:
-        pass
+        """_summary_."""
+        raise NotImplementedError
 
     @property
     def variance_is_relative(self) -> bool:
+        """_summary_."""
         return self._variance_is_relative
 
     @property
     def variance_reference(self) -> float:
+        """_summary_."""
         return self._variance_reference
 
     @property
     def log_transformed(self) -> bool:
+        """_summary_."""
         return self._perform_log_transform
 
     @property
     def output_data_range(self) -> float:
+        """_summary_."""
         return self._max_output_data - self._min_output_data
 
 
 # ==================================================================================================
 class SKLearnGPSurrogateModel(BaseSurrogateModel):
+    """_summary_."""
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, settings: SKLearnGPSettings) -> None:
+        """_summary_.
+
+        Args:
+            settings (SKLearnGPSettings): _description_
+        """
         super().__init__(settings)
         self._gp_model = self._init_gp_model(settings)
         if settings.checkpoint_load_file is not None:
@@ -118,6 +177,12 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def update_training_data(self, input_data: np.ndarray, output_data: np.ndarray) -> None:
+        """_summary_.
+
+        Args:
+            input_data (np.ndarray): _description_
+            output_data (np.ndarray): _description_
+        """
         if self._perform_log_transform:
             output_data = np.exp(output_data)
 
@@ -132,6 +197,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def fit(self) -> None:
+        """_summary_."""
         if self._training_input.shape[0] >= self._minimum_num_training_points:
             self._gp_model.fit(self._training_input, self._training_output)
             optimized_kernel = self._gp_model.kernel_
@@ -140,6 +206,14 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def predict_and_estimate_variance(self, parameters: np.ndarray) -> tuple[float, float]:
+        """_summary_.
+
+        Args:
+            parameters (np.ndarray): _description_
+
+        Returns:
+            tuple[float, float]: _description_
+        """
         mean, standard_deviation = self._gp_model.predict(parameters, return_std=True)
         variance = standard_deviation**2
 
@@ -163,6 +237,11 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def load_checkpoint(self, checkpoint_load_file: Path) -> None:
+        """_summary_.
+
+        Args:
+            checkpoint_load_file (Path): _description_
+        """
         with open(checkpoint_load_file, "rb") as checkpoint_file:
             checkpoint = pickle.load(checkpoint_file)
             self._training_input = checkpoint.input_data
@@ -174,6 +253,11 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
 
     # ----------------------------------------------------------------------------------------------
     def save_checkpoint(self, checkpoint_id: int) -> None:
+        """_summary_.
+
+        Args:
+            checkpoint_id (int): _description_
+        """
         checkpoint = SKLearnGPCheckpoint(
             input_data=self._training_input,
             output_data=self._training_output,
@@ -186,6 +270,14 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def _init_gp_model(settings: SKLearnGPSettings) -> GaussianProcessRegressor:
+        """_summary_.
+
+        Args:
+            settings (SKLearnGPSettings): _description_
+
+        Returns:
+            GaussianProcessRegressor: _description_
+        """
         const_kernel = settings.scaling_kernel
         correlation_kernel = settings.correlation_kernel
         kernel = const_kernel * correlation_kernel
@@ -202,6 +294,11 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     # ----------------------------------------------------------------------------------------------
     @property
     def training_data(self) -> tuple[np.ndarray, np.ndarray]:
+        """_summary_.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray]: _description_
+        """
         return self._training_input, self._training_output
 
     @training_data.setter
@@ -211,6 +308,11 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
     # ----------------------------------------------------------------------------------------------
     @property
     def scale_and_correlation_length(self) -> tuple[tuple[float], tuple[float]]:
+        """_summary_.
+
+        Returns:
+            tuple[tuple[float], tuple[float]]: _description_
+        """
         scale = self._gp_model.kernel.k1.constant_value
         correlation_length = self._gp_model.kernel.k2.length_scale
         return scale, correlation_length
