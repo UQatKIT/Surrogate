@@ -1,7 +1,7 @@
-"""_summary_.
+"""Visualization of surrogate modelling.
 
-Returns:
-    _type_: _description_
+This module provides the `Visualizer` class, which is used to visualize the results of a surrogate
+from saved checkpoints.
 """
 
 from dataclasses import dataclass
@@ -18,14 +18,15 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class VisualizationSettings:
-    """_summary_.
+    """Configuration for the `Visualizer` object.
 
     Attributes:
-        offline_checkpoint_file: Path: _summary_
-        online_checkpoint_filestub: Path: _summary_
-        visualization_file: Path: _summary_
-        visualization_bounds: list[list[float, float]]: _summary_
-        rng_seed: int: _summary_
+        offline_checkpoint_file (Path): Checkpoint file after pretraining
+        online_checkpoint_filestub (Path:) Checkpoint file stub for online training, indices will be
+            appended to the file names automatically
+        visualization_file (Path): File to save visualizations to
+        visualization_bounds (list[tuple[float, float]]): Bounds for plotting in each dimension
+        rng_seed (int): Seed for RNG used during marginalization
     """
     offline_checkpoint_file: Path
     online_checkpoint_filestub: Path
@@ -36,10 +37,15 @@ class VisualizationSettings:
 
 # ==================================================================================================
 class Visualizer:
-    """_summary_.
+    """Main object for visualizing surrogate model run results.
 
-    Returns:
-        _type_: _description_
+    The visualizer is used to show the functionality of a surrogate model, trained from saved
+    checkpoints. It plots results for pretraining, as well as online checkpoints. Depending on the
+    dimensionality of the parameter space, the visualization is done in different ways. In any case,
+    the plots show the predicted mean and standard deviation.
+
+    Methods:
+        run: Executes visualizations for all provided checkpoints
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -47,8 +53,11 @@ class Visualizer:
         self,
         visualization_settings: VisualizationSettings,
         test_surrogate: surrogate_model.BaseSurrogateModel,
-    ):
-        """_summary_.
+    ) -> None:
+        """Constructor.
+
+        Takes configuration and a surrogate model. The surrogate should be of the same type as the
+        one used for generating the checkpoints.
 
         Args:
             visualization_settings (VisualizationSettings): _description_
@@ -64,7 +73,15 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
-        """_summary_."""
+        """Executes visualization.
+
+        Creates a pdf document with visualizations of the postetior mean, std and training data
+        for each checkpoint. The exact visualization procedure depend on the dimensionality of the
+        parameter space.
+        - 1D: Visualize mean and std in one plot, equipped with training data
+        - 2D: Visualize mean and std in separate plots, training data is shown in mean plot
+        - ND: Visualize 1D and 2D marginals, with mean and std, training data is not shown
+        """
         if self._visualization_file is not None:
             if not self._visualization_file.parent.is_dir():
                 self._visualization_file.parent.mkdir(parents=True, exist_ok=True)
@@ -88,26 +105,30 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint(self, pdf_file: PdfPages, name: str) -> None:
-        """_summary_.
+        """Execute visualization of single checkpoint.
+
+        Execution depend on the dimensionality of the parameter space
 
         Args:
-            pdf_file (PdfPages): _description_
-            name (str): _description_
+            pdf_file (PdfPages): PDF file to add visualization to
+            name (str): Plot title (checkpoint name)
         """
         if self._param_dim == 1:
             self._visualize_checkpoint_1D(pdf_file, name)
         elif self._param_dim == 2:
-            self._visualize_chackpoint_2D(pdf_file, name)
+            self._visualize_checkpoint_2D(pdf_file, name)
         else:
             self._visualize_checkpoint_ND(pdf_file, name)
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_1D(self, pdf: PdfPages, name: str) -> None:
-        """_summary_.
+        """Visualize a checkpoint for 1D parameter space.
+
+        Simple shows the posterior mean, the std as cpnfidence interval, and the training data.
 
         Args:
-            pdf (PdfPages): _description_
-            name (str): _description_
+            pdf (PdfPages): PDF file to add visualization to
+            name (str): Plot title (checkpoint name)
         """
         param_values = np.linspace(*self._visualization_bounds[0], 1000)
         mean, std = utilities.process_mean_std(self._test_surrogate, param_values.reshape(-1, 1))
@@ -120,12 +141,14 @@ class Visualizer:
         plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_chackpoint_2D(self, pdf: PdfPages, name: str) -> None:
-        """_summary_.
+    def _visualize_checkpoint_2D(self, pdf: PdfPages, name: str) -> None:
+        """Visualize a checkpoint for 2D parameter space.
+
+        Visualizes mean and std in separate plots, training data is shown in mean plot.
 
         Args:
-            pdf (PdfPages): _description_
-            name (str): _description_
+            pdf (PdfPages): PDF file to add visualization to
+            name (str): Plot title (checkpoint name)
         """
         self._visualization_bounds[0]
         param_1_values = np.linspace(*self._visualization_bounds[0], 100)
@@ -149,11 +172,17 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_ND(self, pdf: PdfPages, name: str) -> None:
-        """_summary_.
+        """Visualize a checkpoint for ND parameter space.
+
+        This method is invoked for cases with D > 2 dimensional parameter space. It generals plots
+        for all 1D marginals, as well as 2D marginals for all possible parameter tuples. Marginals
+        are evaluated through Monte Carlo sampling in the latent dimensions. Note that this might
+        take some time, and that the approximations are rather coarse to reduce the computational
+        load.
 
         Args:
-            pdf (PdfPages): _description_
-            name (str): _description_
+            pdf (PdfPages): PDF file to add visualization to
+            name (str): Plot title (checkpoint name)
         """
         fig, axs = plt.subplots(
             nrows=1, ncols=self._param_dim, figsize=(6 * self._param_dim, 5), layout="constrained"
@@ -187,7 +216,7 @@ class Visualizer:
         fig_mean.suptitle(f"{name} mean")
         fig_std.suptitle(f"{name} std")
         for i in range(self._param_dim - 1):
-            for j in range(0, self._param_dim - 1 - i):
+            for j in range(self._param_dim - 1 - i):
                 ind_comb = structured_ind_combs[i][j]
                 param_values, mean, std = self._evaluate_2D_marginal(*ind_comb)
                 self._visualize_2D(axs_mean[i, j], ind_comb, param_values, mean, training_data)
@@ -210,15 +239,19 @@ class Visualizer:
         std: np.ndarray,
         training_data: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
-        """_summary_.
+        """Simple 1D visualization.
+
+        Plots the posterior mean and the std as confidence interval. If training data is provided,
+        it is shown as points.
 
         Args:
-            ax (plt.axis): _description_
-            ind (int): _description_
-            param_values (np.ndarray): _description_
-            mean (np.ndarray): _description_
-            std (np.ndarray): _description_
-            training_data (tuple[np.ndarray, np.ndarray] | None, optional): _description_. Defaults to None.
+            ax (plt.axis): MPL axis object to insert plot into
+            ind (int): Index of parameter dimension (used for axis label)
+            param_values (np.ndarray): x-values
+            mean (np.ndarray): y-values
+            std (np.ndarray): confidence interval
+            training_data (tuple[np.ndarray, np.ndarray] | None, optional):
+                Input and output data for the surrogate training. Defaults to None.
         """
         ax.plot(param_values, mean)
         ax.fill_between(param_values, mean - 1.96 * std, mean + 1.96 * std, alpha=0.2)
@@ -237,14 +270,15 @@ class Visualizer:
         solution_values: np.ndarray,
         training_data: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
-        """_summary_.
+        """Simple 2D visualization.
 
         Args:
-            ax (plt.axis): _description_
-            ind_comb (tuple[int, int]): _description_
-            param_values (tuple[np.ndarray, np.ndarray]): _description_
-            solution_values (np.ndarray): _description_
-            training_data (tuple[np.ndarray, np.ndarray] | None, optional): _description_. Defaults to None.
+            ax (plt.axis): MPL axis object to insert plot into
+            ind_comb (tuple[int, int]): Index combination for the tow parameters under consideration
+            param_values (tuple[np.ndarray, np.ndarray]): x-values
+            solution_values (np.ndarray): y-values (mean or std)
+            training_data (tuple[np.ndarray, np.ndarray] | None, optional):
+            Input and output data for the surrogate training. Defaults to None.. Defaults to None.
         """
         ax.contourf(*param_values, solution_values, levels=10, cmap="Blues")
         if training_data is not None:
@@ -254,13 +288,16 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _evaluate_1D_marginal(self, param_ind: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """_summary_.
+        """Approximate 1D marginal distribution through Monte Calor sampling.
+
+        For every value of the active parameter, compute 100 LHS samples in the latent space and
+        approximate mean and std from it.
 
         Args:
-            param_ind (int): _description_
+            param_ind (int): Index of parameter dimension
 
         Returns:
-            tuple[np.ndarray, np.ndarray, np.ndarray]: _description_
+            tuple[np.ndarray, np.ndarray, np.ndarray]: parameter values, marginal mean and std
         """
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]
@@ -288,14 +325,18 @@ class Visualizer:
     def _evaluate_2D_marginal(
         self, param_ind_1: int, param_ind_2: int
     ) -> tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
-        """_summary_.
+        """Approximate 2D marginal distribution through Monte Carlo sampling.
+
+        For every value combination of the two active parameter, compute 100 LHS samples in the
+        latent space and approximate mean and std from it.
 
         Args:
-            param_ind_1 (int): _description_
-            param_ind_2 (int): _description_
+            param_ind_1 (int): Index of first parameter dimension
+            param_ind_2 (int): Index of second parameter dimension
 
         Returns:
-            tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]: _description_
+            tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
+                meshgrid of the 2D active parameter space, marginal mean and std
         """
         lower_bounds = [bound[0] for bound in self._visualization_bounds]
         upper_bounds = [bound[1] for bound in self._visualization_bounds]

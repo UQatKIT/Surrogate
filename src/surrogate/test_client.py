@@ -1,4 +1,4 @@
-"""_summary_."""
+"""Minimal Test Client for testing an active control server."""
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
@@ -11,13 +11,13 @@ from . import utilities
 # ==================================================================================================
 @dataclass
 class TestClientSettings:
-    """_summary_.
+    """Configuration of an Umbridge test client.
 
     Attributes:
-        control_url: str: _summary_
-        control_name: str: _summary_
-        simulation_config: dict[Any]: _summary_
-        training_params: np.ndarray: _summary_
+        control_url: str: Address of the UMBridge server of the surrogate control
+        control_name: str: Name of the UMBridge server of the surrogate control
+        simulation_config: dict[Any]: Configuration argument for the call to the control servers
+        training_params: np.ndarray: Parameters to request evaluation for
     """
     control_url: str
     control_name: str
@@ -27,14 +27,23 @@ class TestClientSettings:
 
 # ==================================================================================================
 class TestClient:
-    """_summary_."""
+    """Minimal test client.
+
+    The test client connects to an active control server and submits requests for evlauation of
+    the user-given parameters.
+
+    Methods:
+        run: Run the client
+    """
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, test_client_settings: TestClientSettings) -> None:
-        """_summary_.
+        """Constructor.
+
+        Sets up control server.
 
         Args:
-            test_client_settings (TestClientSettings): _description_
+            test_client_settings (TestClientSettings): Configuration of the client
         """
         control = utilities.request_umbridge_server(
             test_client_settings.control_url, test_client_settings.control_name
@@ -44,7 +53,7 @@ class TestClient:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
-        """_summary_."""
+        """Submit evaluation requests to control server."""
         for param in self._training_params:
             if not isinstance(param, np.ndarray):
                 param = np.array([param])
