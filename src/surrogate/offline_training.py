@@ -1,4 +1,7 @@
-"""_summary_."""
+"""Pretraining of a surrogate model on pseudo-random parameters.
+
+Description follows.
+"""
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -13,15 +16,17 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class OfflineTrainingSettings:
-    """_summary_.
+    """Configuration of the offline training run.
 
     Attributes:
-        num_offline_training_points: _summary_
-        num_threads: _summary_
-        offline_model_config: _summary_
-        lhs_bounds: _summary_
-        lhs_seed: _summary_
-        checkpoint_save_name: _summary_
+        num_offline_training_points: Number of parameter samples to generate for training through
+            Latin Hypercube Sampling.
+        num_threads: Number of parallel threads to use for pretraining. Only makes sense if the
+            calls to the simulation model are dispatched to an actually parallel setup
+        offline_model_config: Configuration of UMBridge calls to the simulation model server.
+        lhs_bounds: Dimension-wise bounds for the Latin Hypercube Sampling.
+        lhs_seed: Seed for the Latin Hypercube Sampling.
+        checkpoint_save_name: Name of the checkpoint file to save the surrogate model and data to.
     """
     num_offline_training_points: int
     num_threads: int
@@ -33,7 +38,10 @@ class OfflineTrainingSettings:
 
 # ==================================================================================================
 class OfflineTrainer:
-    """_summary_."""
+    """Class for pretraining of surrogate models.
+
+    jo
+    """
 
     # ----------------------------------------------------------------------------------------------
     def __init__(
@@ -43,13 +51,14 @@ class OfflineTrainer:
         surrogate_model: surrogate_model.BaseSurrogateModel,
         simulation_model: Callable,
     ) -> None:
-        """_summary_.
+        """Constructor.
 
         Args:
-            training_settings (OfflineTrainingSettings): _description_
-            logger_settings (utilities.LoggerSettings): _description_
-            surrogate_model (surrogate_model.BaseSurrogateModel): _description_
-            simulation_model (Callable): _description_
+            training_settings (OfflineTrainingSettings): Configuration of the offline training run.
+            logger_settings (utilities.LoggerSettings): Configuration of the logger
+            surrogate_model (surrogate_model.BaseSurrogateModel): Surrogate model to train
+            simulation_model (Callable): Simulation model to request evaluations from to generate
+                training data
         """
         self._logger = OfflineTrainingLogger(logger_settings)
         self._surrogate_model = surrogate_model
@@ -65,7 +74,7 @@ class OfflineTrainer:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
-        """_summary_."""
+        """Execute pretraining, based on LHS exploration of the parameter space."""
         lhs_sampler = qmc.LatinHypercube(d=self._dimension, seed=self._seed)
         lhs_samples = lhs_sampler.random(n=self._num_training_points)
         lhs_samples = qmc.scale(lhs_samples, self._lower_bounds, self._upper_bounds)
@@ -103,28 +112,29 @@ class OfflineTrainer:
 
 # ==================================================================================================
 class OfflineTrainingLogger(utilities.BaseLogger):
-    """_summary_.
+    """Logger for information during pretraining.
 
-    Args:
-        utilities (_type_): _description_
+    The logger records to events:
+    1. Generation of training data sample (input and output)
+    2. Fitting of the surrogate
     """
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
-        """_summary_.
+        """Constructor.
 
         Args:
-            logger_settings (utilities.LoggerSettings): _description_
+            logger_settings (utilities.LoggerSettings): Configuration of the logger
         """
         super().__init__(logger_settings)
 
     # ----------------------------------------------------------------------------------------------
     def log_simulation_run(self, parameter: float | Iterable, result: float) -> None:
-        """_summary_.
+        """Log information on generation of a training sample.
 
         Args:
-            parameter (float | Iterable): _description_
-            result (float): _description_
+            parameter (float | Iterable): Input parameter
+            result (float): Simulation model result
         """
         parameter_str = self._process_value_str(parameter, "<12.3e")
         result_str = self._process_value_str(result, "<12.3e")
@@ -135,11 +145,12 @@ class OfflineTrainingLogger(utilities.BaseLogger):
     def log_surrogate_fit(
         self, scale: float | Iterable, correlation_length: float | Iterable
     ) -> None:
-        """_summary_.
+        """Log information on the fitting of the surrogate.
 
         Args:
-            scale (float | Iterable): _description_
-            correlation_length (float | Iterable): _description_
+            scale (float): Log scale parameter of the surrogate model (for GPs)
+            correlation_length (float | Iterable): Log correlation length per dimension of the
+                surrogate model (for GPs)
         """
         scale_str = self._process_value_str(scale, "<12.3e")
         corr_length_str = self._process_value_str(correlation_length, "<12.3e")

@@ -1,7 +1,6 @@
-"""_summary_.
+"""Surrogate control server for asynchronous requests and retraining.
 
-Returns:
-    _type_: _description_
+Description follows.
 """
 
 import threading
@@ -18,15 +17,20 @@ from . import surrogate_model, utilities
 # ==================================================================================================
 @dataclass
 class ControlSettings:
-    """_summary_.
+    """Configuration of the surrogate control.
 
     Attributes:
-        port (_type_): _description_
-        name (_type_): _description_
-        minimum_num_training_points (_type_): _description_
-        update_interval_rule (_type_): _description_
-        variance_threshold (_type_): _description_
-        overwrite_checkpoint (_type_, optional): _description_. Defaults to True.
+        port (str): Port to serve the UMBridge control server to, only used in `run_server` script
+        name (str): Name of the UMBridge control server
+        minimum_num_training_points (int): Number of training points that need to be provided before
+            the surrogate is first used
+        update_interval_rule (Callable): Callable determining the number of training points, given
+            the current number, after which the surrogate model is next retrained
+        variance_threshold (float): Threshold of the variance in the surrogate model (absolute or
+            relative), below which the surrogate mean is used as predictor. Otherwise, a simulation
+            model run is triggered
+        overwrite_checkpoint (bool, optional): Whether to overwrite checkpoints. If not, the
+            checkpoint names are ID-ed with increasing numbers. Defaults to True.
     """
     port: str
     name: str
@@ -38,15 +42,16 @@ class ControlSettings:
 
 @dataclass
 class CallInfo:
-    """_summary_.
+    """Logger Info object for control calls.
 
     Attributes:
-        parameters (_type_): _description_
-        surrogate_result (_type_): _description_
-        simulation_result (_type_): _description_
-        variance (_type_): _description_
-        surrogate_used (_type_): _description_
-        num_training_points (_type_): _description
+        parameters (list[list[float]]): Parameters the control was called with
+        surrogate_result (np.ndarray): Mean prediction from surrogate
+        simulation_result (list[list[float]]): Result requested from UMBridge simulation model
+            server
+        variance (np.ndarray): Variance prediction from surrogate
+        surrogate_used (bool): Whether surrogate has been used for prediction
+        num_training_points (int): Overall number of training points generated so far
     """
     parameters: list
     surrogate_result: np.ndarray
@@ -58,14 +63,15 @@ class CallInfo:
 
 @dataclass
 class UpdateInfo:
-    """_summary_.
+    """Logger Info object for surrogate updates, meaning that new training data has been provided.
 
     Attributes:
-        new_fit (_type_): _description_
-        num_updates (_type_): _description_
-        next_update (_type_): _description_
-        scale (_type_): _description_
-        correlation_length (_type_): _description_
+        new_fit (bool): Whether the surrogate has been retrained with the new data
+        num_updates (int): Number of surrogate retrains performed so far
+        next_update (int): Number of training  samples after which the next retrain is scheduled
+        scale (float): Scale parameter of the trained surrogate kernel (for GPs)
+        correlation_length (float | np.ndarray): Correlation length per dimension parameter of the
+            trained surrogate kernel (for GPs)
     """
     new_fit: bool
     num_updates: int
@@ -76,13 +82,9 @@ class UpdateInfo:
 
 # ==================================================================================================
 class SurrogateControl(ub.Model):
-    """_summary_.
+    """Surrogate control server for asynchronous requests and retraining.
 
-    Args:
-        ub (_type_): _description_
-
-    Returns:
-        _type_: _description_
+    Description follows.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -93,13 +95,17 @@ class SurrogateControl(ub.Model):
         surrogate_model: surrogate_model.BaseSurrogateModel,
         simulation_model: Callable,
     ) -> None:
-        """_summary_.
+        """Constructor.
+
+        Initializes all data structures based on the provided configuration. Additionally, start
+        a daemon process to asynchronously update the surrogate when new data is obtained from the
+        simulation model.
 
         Args:
-            control_settings (ControlSettings): _description_
-            logger_settings (utilities.LoggerSettings): _description_
-            surrogate_model (surrogate_model.BaseSurrogateModel): _description_
-            simulation_model (Callable): _description_
+            control_settings (ControlSettings): Configuration of the control server
+            logger_settings (utilities.LoggerSettings): Configuration of the logger
+            surrogate_model (surrogate_model.BaseSurrogateModel): Surrogate model to be used
+            simulation_model (Callable): Simulation model to be used
         """
         super().__init__(control_settings.name)
 
@@ -128,48 +134,43 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def get_input_sizes(self, _config: dict[str, Any]) -> list[int]:
-        """_summary_.
-
-        Args:
-            _config (dict[str, Any]): _description_
-
-        Returns:
-            list[int]: _description_
-        """
+        """UMBridge method to specify dimension of the input parameters."""
         return self._input_sizes
 
     # ----------------------------------------------------------------------------------------------
     def get_output_sizes(self, _config: dict[str, Any]) -> list[int]:
-        """_summary_.
-
-        Args:
-            _config (dict[str, Any]): _description_
-
-        Returns:
-            list[int]: _description_
-        """
+        """UMBridge method to specify dimension of the output."""
         return self._output_sizes
 
     # ----------------------------------------------------------------------------------------------
     def supports_evaluate(self) -> bool:
-        """_summary_.
-
-        Returns:
-            bool: _description_
-        """
+        """UMBridge flags indicating that the server can be called for evaluation."""
         return True
 
     # ----------------------------------------------------------------------------------------------
     def __call__(self, parameters: list[list[float]], config: dict[str, Any]) -> list[list[float]]:
-        """_summary_.
+        """Call method according to UMBridge interface.
+
+        An evaluation request for a given parameter set is requested as follows. Firstly, the
+        surrogate is invoked, returning mean and variance for the estimation at the given parameter.
+        If the variance is too large, the simulation model is invoked, and the result is returned
+        along with a variance of zero. Otherwise, mean and variance of the surrogate prediction are
+        returned.
+        Whenever the simulation model is invoked, it automatically generates a new training sample
+        for the surrogate. This sample is queued and used for retraining by the daemon thread of the
+        control server.
 
         Args:
-            parameters (list[list[float]]): _description_
-            config (dict[str, Any]): _description_
+            parameters (list[list[float]]): Parameter set for which evaluation is requested
+            config (dict[str, Any]): Configuration for the request, passed on to the simulation
+                model, which is also assumed to be an UMBridge server
 
         Returns:
-            list[list[float]]: _description_
+            list[list[float]]: Result of the request (surrogate or simulation result) in
+                UMBridge format
         """
+        # If the number of overall training points is too small, always use the simulation model
+        # Use the generated data for retraining
         if self._num_generated_training_points < self._minimum_num_training_points:
             surrogate_result = None
             simulation_result = self._simulation_model(parameters, config)[0]
@@ -178,11 +179,15 @@ class SurrogateControl(ub.Model):
             result_list = [[simulation_result], [variance]]
             self._queue_training_data(parameters, simulation_result)
         else:
+            # If the variance in the surrogate prediction is sufficiently small, use the
+            # approximation as output of the request
             surrogate_result, variance = self._call_surrogate(parameters)
             if np.max(variance) <= self._variance_threshold:
                 simulation_result = None
                 surrogate_used = True
                 result_list = [surrogate_result.tolist(), variance.tolist()]
+            # Otherwise, use the simulation model to obtain the result
+            # Use the generated data for retraining
             else:
                 simulation_result = self._simulation_model(parameters, config)[0]
                 surrogate_used = False
@@ -202,9 +207,14 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def update_surrogate_model_daemon(self) -> None:
-        """_summary_.
+        """Daemon thread for updating the surrogate model.
 
-        bla
+        The control server hosts a background or daemon thread. This thread checks if new training
+        data has been generated by the simulation model and transferred to a specific update queue.
+        The daemon thread scrapes the new data and retrains the surrogate if a sufficient number of
+        samples, provided by the user-specified update rule, is available. Access to the queue and
+        the surrogate object is synchronized with the processe's evaluation request via threading
+        locks.
         """
         while True:
             self._training_data_available.wait()
@@ -232,25 +242,14 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _init_surrogate_model_update_thread(self) -> threading.Thread:
-        """_summary_.
-
-        Returns:
-            threading.Thread: _description_
-        """
+        """Start the daemon thread for surrogate updates."""
         update_thread = threading.Thread(target=self.update_surrogate_model_daemon, daemon=True)
         update_thread.start()
         return update_thread
 
     # ----------------------------------------------------------------------------------------------
     def _call_surrogate(self, parameters: list[list[float]]) -> np.ndarray:
-        """_summary_.
-
-        Args:
-            parameters (list[list[float]]): _description_
-
-        Returns:
-            np.ndarray: _description_
-        """
+        """Invoke surrogate, synchronizing with daemon thread."""
         with self._surrogate_lock:
             parameter_array = utilities.convert_list_to_array(parameters[0])
             result, variance = self._surrogate_model.predict_and_estimate_variance(parameter_array)
@@ -259,12 +258,12 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _retrain_surrogate(self) -> None:
-        """_summary_."""
+        """Retrain surrogate, synchronizing with request thread."""
         with self._surrogate_lock:
             try:
                 self._surrogate_model.fit()
-            except Exception as exc:
-                self._logger.exception(exc)
+            except Exception:
+                self._logger.exception()
             self._num_surrogate_model_updates += 1
             self._next_surrogate_model_update_iter = self._next_iter_update_rule(
                 self._num_surrogate_model_updates
@@ -274,11 +273,11 @@ class SurrogateControl(ub.Model):
     def _queue_training_data(
         self, parameters: list[list[float]], result: list[list[float]]
     ) -> None:
-        """_summary_.
+        """Insert new training data into update queue, synchronizing with daemon thread.
 
         Args:
-            parameters (list[list[float]]): _description_
-            result (list[list[float]]): _description_
+            parameters (list[list[float]]): input of the data sample
+            result (list[list[float]]): output of the data sample
         """
         with self._data_lock:
             input_array = utilities.convert_list_to_array(parameters[0])
@@ -292,7 +291,7 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _tap_training_data(self) -> None:
-        """_summary_."""
+        """Transfer training data from queue to surrogate, synchronizing with request thread."""
         with self._data_lock:
             input_array = np.vstack(self._input_training_data)
             output_array = np.vstack(self._output_training_data)
@@ -303,36 +302,33 @@ class SurrogateControl(ub.Model):
 
     # ----------------------------------------------------------------------------------------------
     def _get_checkpoint_id(self) -> int:
-        """_summary_.
-
-        Returns:
-            int: _description_
-        """
+        """Get ID for a checkpoint."""
         checkpoint_id = None if self._overwrite_checkpoint else self._num_saved_checkpoints
         return checkpoint_id
 
 
 # ==================================================================================================
 class SurrogateLogger(utilities.BaseLogger):
-    """_summary_.
+    """Logger for the surrogate control during runs.
 
-    Args:
-        utilities (_type_): _description_
+    The logger processes two types of events:
+    1. Request from a client, provided as a `CallInfo` object
+    2. Update of the surrogate model, provided as an `UpdateInfo` object
     """
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, logger_settings: utilities.LoggerSettings) -> None:
-        """_summary_.
+        """Constructor.
 
         Args:
-            logger_settings (utilities.LoggerSettings): _description_
+            logger_settings (utilities.LoggerSettings): Configuration of the logger
         """
         super().__init__(logger_settings)
         self.print_header()
 
     # ----------------------------------------------------------------------------------------------
     def print_header(self) -> None:
-        """_summary_."""
+        """Print info banner explaining the abbreviations used during logging."""
         header_str = (
             "Explanation of abbreviations:\n\n"
             "Par: Input parameters\n"
@@ -351,10 +347,10 @@ class SurrogateLogger(utilities.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def log_control_call_info(self, call_info: CallInfo) -> None:
-        """_summary_.
+        """Log info from a call to the control server.
 
         Args:
-            call_info (CallInfo): _description_
+            call_info (CallInfo): CallInfo object to process
         """
         with self._lock:
             parameter_str = self._process_value_str(call_info.parameters, "<12.3e")
@@ -383,10 +379,10 @@ class SurrogateLogger(utilities.BaseLogger):
 
     # ----------------------------------------------------------------------------------------------
     def log_surrogate_update_info(self, update_info: UpdateInfo) -> None:
-        """_summary_.
+        """Log info from an update of the surrogate.
 
         Args:
-            update_info (UpdateInfo): _description_
+            update_info (UpdateInfo): UpdateInfo object to process
         """
         with self._lock:
             scale_str = self._process_value_str(update_info.scale, "<12.3e")
