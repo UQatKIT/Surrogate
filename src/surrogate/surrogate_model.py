@@ -31,7 +31,7 @@ class BaseSettings:
 
     Attributes:
         minimum_num_training_points (int): Number of training points below which surrogate is not
-            used for prediction.
+            retrained.
         perform_log_transform (bool): Whether the output of the surrogate should be log-transformed.
         variance_is_relative (bool): Whether the variance should be normalized, either by a
             provided reference or by the range of the training data.
