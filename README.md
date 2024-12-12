@@ -1,6 +1,6 @@
 # Asynchronous Greedy Surrogate Client
 
-This repository provides the code base for a greedy, asynchronous surrogate model in the form of an [UM-Bridge](https://um-bridge-benchmarks.readthedocs.io/en/docs/) server. The interface can be used for different surrogate types, but the current applications really on *Gaussian Process Regression* as implemented in the [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html) library. The basic idea of the implementation is that a surrogate can learn an input-output mapping from another model, from which it fetches new training data on demand. This demand is determined by the variance in the (probabilistic) surrogate prediction for a given input. If the variance is below a user-defined threshold, the surrogate prediction is returned. Otherwise, a new run of the data-generating model is triggered and its output is returned. In addition, the newly generated data is used to retrain the surrogate in an asynchronous background process.
+This repository provides the code base for a greedy, asynchronous surrogate model in the form of an [UM-Bridge](https://um-bridge-benchmarks.readthedocs.io/en/docs/) server. The interface can be used for different surrogate types, but the current applications rely on *Gaussian Process Regression* as implemented in the [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html) library. The basic idea of the implementation is that a surrogate can learn an input-output mapping from another model, from which it fetches new training data on demand. This demand is determined by the variance in the (probabilistic) surrogate prediction for a given input. If the variance is below a user-defined threshold, the surrogate prediction is returned. Otherwise, a new run of the data-generating model is triggered and its output is returned. In addition, the newly generated data is used to retrain the surrogate in an asynchronous background process.
 The described approach is particularly useful for multilevel-type algorithms. We have successfully employed it for a specialized version of the *Multilevel Delayed Acceptance* (MLDA) algorithm, a multilevel Markov Chain Monte Carlo sampler. For further details, we refer the reader to the accompanying publication, "Scalable Bayesian Inference of Large Simulations via Asynchronous Prefetching Multilevel Delayed Acceptance".
 
 ## Installation
@@ -9,15 +9,15 @@ The library in this repository is a Python package readily installable via `pip`
 ```python
 pip install .
 ```
-in the root directory. Alternatively, you may use [UV](https://docs.astral.sh/uv/), which has been used for the setup of the project.
+in the root directory. Alternatively, you may use [UV](https://docs.astral.sh/uv/), which has been employed for the setup of the project.
 
 ## Usage
 
-The `surrogate` package comprises to main components, `SurrogateControl` in the `surrogate_control` module, and a hierarchy of actual surrogate models in `surrogate_model`. In the latter module `BaseSurrogateModel` provides a generic interface compatible with the control. The `SKLearnGPSurrogateModel` class is the implementation of that interface based on `sckit-learn`. Other implementations are possible analogously. The `SurrogateControl` takes a `BaseSurrogateModel` instance along with another callable to generate "true" outputs. We will refer to this as `simulation_model`. As an UM-Bridge server, the surrogate control can receive requests for evaluation for some input parameter set. These calls are dispatched to the prediction of the surrogate or the simulation model, depending on the variance criterion mentioned above. The control further has a daemon process running in the background. Whenever new training data becomes available through simulation model runs, that background process scrapes the data and retrains the surrogate. All mentioned components have extensivee in-code documentation, which we refer the reader to for more detailed information on their usage and implementation.
+The `surrogate` package comprises two main components, `SurrogateControl` in the `surrogate_control` module, and a hierarchy of actual surrogate models in `surrogate_model`. In the latter module, `BaseSurrogateModel` provides a generic interface compatible with the control. The `SKLearnGPSurrogateModel` class is the implementation of that interface based on `scikit-learn`. Other implementations are possible analogously. The `SurrogateControl` takes a `BaseSurrogateModel` instance along with another callable to generate "true" outputs. We will refer to this as `simulation_model`. As an UM-Bridge server, the surrogate control can receive requests for evaluation for some input parameter set. These calls are dispatched to the prediction of the surrogate or the simulation model, depending on the variance criterion mentioned above. The control further has a daemon process running in the background. Whenever new training data becomes available through simulation model runs, that background process scrapes the data and retrains the surrogate. All mentioned components have extensive in-code documentation, which we refer the reader to for more detailed information on their usage and implementation.
 
 **Simulation Model Setup**
 
-To showcase the details of this procedure, we discuss the workflow for executing `example_01` in the example directory. To begin with, we setup a an UM-Bridge server mimicking a simulation model. We will fetch output data from this model. Run in a first terminal session:
+To showcase the details of the outlined procedure, we discuss the workflow for executing `example_01` in the example directory. To begin with, we set up an UM-Bridge server mimicking a simulation model. We will fetch output data from this model. Run in a first terminal session:
 ```
 python simulation_model.py
 ```
@@ -36,7 +36,7 @@ Firstly, this is the `SimulationModelSettings` data class:
 
 Additionally, `SKLearnGPSettings` provides the configuration of the surrogate model to pretrain (see scikit-learn docs for more details):
 - `scaling_kernel`: Is the prefactor for the GP kernel function
-- `correlation_kernel`: is the correlation function for the GP kernel function
+- `correlation_kernel`: Is the correlation function for the GP kernel function
 - `data_noise`: Assumed noise on output data, should be larger than zero for numerical stability
 - `num_optimizer_restarts`: Maximum number of restarts for optimization (with *l-bfgs-b*)
 - `minimum_num_training_points`: Number of training points below which surrogate is not retrained yet
@@ -78,15 +78,15 @@ This is done in the `ControlSettings` data class:
 - `port`: URL under which the control will be served as an UM-Bridge server
 - `name`: Name under which the control will be served as an UM-Bridge server
 - `minimum_num_training_points`: Number of available training samples below which the surrogate is not used for prediction yet
-- `update_interval_rule`: Callable determining after how many training samples the surrogate is re-trained, given the number of samples after the last fitting procedure
+- `update_interval_rule`: Callable determining after how many training samples the surrogate is re-trained next, given the number of samples after the last fitting procedure
 - `variance_threshold`: Value of the variance in the surrogate prediction (absolute or relative), below which the surrogate is used as predictor (and not the simulation model)
-- `overwrite_checkpoint`: Whether to overwrite checkpoints during the server run. If not, checkpoints are equipped with and integer id
+- `overwrite_checkpoint`: Whether to overwrite checkpoints during the server run. If not, checkpoints are equipped with an integer id
 
 The control is further equipped with a logger, which is configured by a second `LoggerSettings` instance.
 
 **Test Client**
 
-Next, we probe the running surrogate control server with a test client.The client simply calls the server with a number of input parameters.
+Next, we probe the running surrogate control server with a test client. The client simply calls the server with a number of input parameters.
 
 It is configured in `TestClientSettings`:
 - `control_url`: Address of the control UM-Bridge server
@@ -103,7 +103,7 @@ After the pretraining and test client runs, we can assess the surrogate through 
 python run_visualization.py -app example_01
 ```
 
-Basically, the viaulization code trains a surrogate for every of the exported checkpoints it can find in the results directory. Subsequently, it visualizes the output and associated variance of the respective surrogates, depending on the dimension of the parameter space.
+Basically, the visualization code trains a surrogate for every of the exported checkpoints it can find in the results directory. Subsequently, it visualizes the output and associated variance of the respective surrogates, depending on the dimension of the parameter space.
 
 ## License
 

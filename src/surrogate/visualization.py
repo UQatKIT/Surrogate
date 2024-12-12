@@ -25,7 +25,7 @@ class VisualizationSettings:
         online_checkpoint_filestub (Path:) Checkpoint file stub for online training, indices will be
             appended to the file names automatically
         visualization_file (Path): File to save visualizations to
-        visualization_bounds (list[tuple[float, float]]): Bounds for plotting in each dimension
+        visualization_bounds (list[list[float, float]]): Bounds for plotting in each dimension
         rng_seed (int): Seed for RNG used during marginalization
     """
     offline_checkpoint_file: Path

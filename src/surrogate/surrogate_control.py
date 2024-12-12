@@ -27,7 +27,7 @@ class ControlSettings:
     Attributes:
         port (str): Port to serve the UMBridge control server to, only used in `run_server` script
         name (str): Name of the UMBridge control server
-         (int): Number of training points that need to be provided before
+        minimum_num_training_points (int): Number of training points that need to be provided before
             the surrogate is first used
         update_interval_rule (Callable): Callable determining the number of training points, given
             the current number, after which the surrogate model is next retrained
@@ -39,7 +39,7 @@ class ControlSettings:
     """
     port: str
     name: str
-    : int
+    minimum_num_training_points: int
     update_interval_rule: Callable
     variance_threshold: float
     overwrite_checkpoint: bool = True
