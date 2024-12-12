@@ -1,6 +1,9 @@
 """Pretraining of a surrogate model on pseudo-random parameters.
 
-Description follows.
+Classes:
+    OfflineTrainingSettings: Configuration of the offline training run.
+    OfflineTrainer: Class for pretraining of surrogate models.
+    OfflineTrainingLogger: Logger for information during pretraining.
 """
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed

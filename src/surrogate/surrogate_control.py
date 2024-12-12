@@ -1,6 +1,11 @@
 """Surrogate control server for asynchronous requests and retraining.
 
-Description follows.
+Classes:
+    ControlSettings: Configuration of the surrogate control
+    CallInfo: Logger Info object for control calls
+    UpdateInfo: Logger Info object for surrogate updates
+    SurrogateControl: Surrogate control server for asynchronous requests and retraining
+    SurrogateLogger: Logger for the surrogate control during runs
 """
 
 import threading
