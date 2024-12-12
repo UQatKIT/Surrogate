@@ -78,13 +78,32 @@ This is done in the `ControlSettings` data class:
 - `port`: URL under which the control will be served as an UM-Bridge server
 - `name`: Name under which the control will be served as an UM-Bridge server
 - `minimum_num_training_points`: Number of available training samples below which the surrogate is not used for prediction yet
-- 
+- `update_interval_rule`: Callable determining after how many training samples the surrogate is re-trained, given the number of samples after the last fitting procedure
+- `variance_threshold`: Value of the variance in the surrogate prediction (absolute or relative), below which the surrogate is used as predictor (and not the simulation model)
+- `overwrite_checkpoint`: Whether to overwrite checkpoints during the server run. If not, checkpoints are equipped with and integer id
 
-The control is further equipped with a logger, which is configured by a second `LoggerSettings` instance
+The control is further equipped with a logger, which is configured by a second `LoggerSettings` instance.
 
 **Test Client**
 
+Next, we probe the running surrogate control server with a test client.The client simply calls the server with a number of input parameters.
+
+It is configured in `TestClientSettings`:
+- `control_url`: Address of the control UM-Bridge server
+- `control_name`: Name of the control UM-Bridge server
+- `simulation_config`: Configuration argument for UM_Bridge calls to the simulation model
+- `training_params`: Input parameter samples to probe the control server with
+
+Whenever the control server needs to call the simulation model and retrain the surrogate during this online phase, it exports a new checkpoint. These checkpoints can be utilized to set up the surrogate and control for subsequent runs, so that no information gets lost.
+
 **Visualization**
+
+After the pretraining and test client runs, we can assess the surrogate through visualization:
+```
+python run_visualization.py -app example_01
+```
+
+Basically, the viaulization code trains a surrogate for every of the exported checkpoints it can find in the results directory. Subsequently, it visualizes the output and associated variance of the respective surrogates, depending on the dimension of the parameter space.
 
 ## License
 
