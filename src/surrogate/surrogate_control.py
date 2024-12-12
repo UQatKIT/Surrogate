@@ -84,7 +84,22 @@ class UpdateInfo:
 class SurrogateControl(ub.Model):
     """Surrogate control server for asynchronous requests and retraining.
 
-    Description follows.
+    This is the main component of the surrogate workflow. The control server is an UM-Bridge server,
+    which can be called by a client to request evaluation of the surrogate for a given input
+    parameter set. Internally, the server connects to a simulation model, which is also assumed to
+    be an UM-Bridge server. A call to the server is dispatched either to the surrogate or the
+    simulation model, depending on the variance of the surrogate prediction. See the documentation
+    of the `__call__` method for further details. In addition, the server hosts a background thread
+    that collects new training data whenerver the simulation model is invoked. The data is used to
+    retrain the surrogate model asynchronously. Synchronization between server requests, training
+    data collection, and surrogate retraining is ensured by threading locks.
+
+    Methods:
+        __call__: Call method according to UM-Bridge interface
+        get_input_sizes: UM-Bridge method to specify dimension of the input parameters
+        get_output_sizes: UM-Bridge method to specify dimension of the output
+        supports_evaluate: UM-Bridge flags indicating that the server can be called for evaluation
+        update_surrogate_model_daemon: Daemon thread for updating the surrogate model
     """
 
     # ----------------------------------------------------------------------------------------------

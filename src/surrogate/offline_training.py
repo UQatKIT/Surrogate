@@ -40,7 +40,12 @@ class OfflineTrainingSettings:
 class OfflineTrainer:
     """Class for pretraining of surrogate models.
 
-    jo
+    Implements simple pretraining without the asynchronous server. Input parameters are generated
+    via Latin Hypercube Sampling on the domain of interest. Outputs are obtained from calls to a
+    simulation model server.
+
+    Methods:
+        run: Execute the pretraining.
     """
 
     # ----------------------------------------------------------------------------------------------
