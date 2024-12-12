@@ -1,3 +1,14 @@
+"""Executable script for surrogate control server.
+
+Run this script in a separate terminal session to start the Umbridge server. Make sure to start
+the simulation  model server that the control relies on first.
+For info on how to run the script, type `python run_server.py --help` in the command line.
+
+Functions:
+    process_cli_arguments: Read in command-line arguments for application to run.
+    main: Main routine to be invoked when script is executed
+"""
+
 import argparse
 import importlib
 
@@ -8,6 +19,13 @@ from surrogate import surrogate_control, utilities
 
 # ==================================================================================================
 def process_cli_arguments() -> str:
+    """Read in command-line arguments for application to run.
+
+    Every application has to provide a `settings.py` file.
+
+    Returns:
+        str: Application directory
+    """
     arg_parser = argparse.ArgumentParser(
         prog="run_server.py",
         usage="python %(prog)s [options]",
@@ -30,6 +48,7 @@ def process_cli_arguments() -> str:
 
 # ==================================================================================================
 def main() -> None:
+    """Main routine, reads in settings and runs a SurrogateControl UM-Bridge server."""
     application_dir = process_cli_arguments()
     settings_module = f"{application_dir}.settings"
     settings_module = importlib.import_module(settings_module)

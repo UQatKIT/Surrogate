@@ -1,3 +1,12 @@
+"""Executable script for surrogate pretraining.
+
+For info on how to run the script, type `python run_pretraining.py --help` in the command line.
+
+Functions:
+    process_cli_arguments: Read in command-line arguments for application to run.
+    main: Main routine to be invoked when script is executed
+"""
+
 import argparse
 import importlib
 
@@ -6,6 +15,13 @@ from surrogate import offline_training, utilities
 
 # ==================================================================================================
 def process_cli_arguments() -> str:
+    """Read in command-line arguments for application to run.
+
+    Every application has to provide a `settings.py` file.
+
+    Returns:
+        str: Application directory
+    """
     arg_parser = argparse.ArgumentParser(
         prog="run_pretraining.py",
         usage="python %(prog)s [options]",
@@ -28,6 +44,7 @@ def process_cli_arguments() -> str:
 
 # ==================================================================================================
 def main() -> None:
+    """Main routine, reads in settings and runs OfflineTrainer."""
     application_dir = process_cli_arguments()
     settings_module = f"{application_dir}.settings"
     settings = importlib.import_module(settings_module)
