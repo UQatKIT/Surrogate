@@ -13,6 +13,7 @@ in the root directory. Alternatively, you may use [UV](https://docs.astral.sh/uv
 
 ## Usage
 
+The `surrogate` package comprises to main components, `SurrogateControl` in the `surrogate_control` module, and a hierarchy of actual surrogate models in `surrogate_model`. In the latter module `BaseSurrogateModel` provides a generic interface compatible with the control. The `SKLearnGPSurrogateModel` class is the implementation of that interface based on `sckit-learn`. Other implementations are possible analogously. The `SurrogateControl` takes a `BaseSurrogateModel` instance along with another callable to generate "true" outputs. We will refer to this as `simulation_model`. As an UM-Bridge server, the surrogate control can receive requests for evaluation for some input parameter set. These calls are dispatched to the prediction of the surrogate or the simulation model, depending on the variance criterion mentioned above. The control further has a daemon process running in the background. Whenever new training data becomes available through simulation model runs, that background process scrapes the data and retrains the surrogate.
 
 ## License
 
