@@ -56,7 +56,8 @@ class Gaussian6D(ub.Model):
         self._sleep_time = sleep_time
         self._mean = np.array(6 * (0,))
         covariance = block_diag(
-            [[0.5, 0.05], [0.05, 0.5]], [[1, 0], [0, 1]], [[0.5, 0.05], [0.05, 0.5]]
+            [[0.01, 0.0], [0.0, 0.4]], [[0.5, 0], [0, 0.6]], [[0.8, 0.0], [0.0, 1.0]]
+            #[[0.01, 0.015], [0.015, 0.5]], [[0.01, 0], [0, 0.1]], [[0.5, 0.2], [0.2, 0.25]]
         )
         self._precision = np.linalg.inv(covariance)
 

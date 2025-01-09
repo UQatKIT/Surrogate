@@ -54,7 +54,7 @@ control_logger_settings = utils.LoggerSettings(
 
 # --------------------------------------------------------------------------------------------------
 pretraining_settings = offline_training.OfflineTrainingSettings(
-    num_offline_training_points=100,
+    num_offline_training_points=200,
     num_threads=1,
     offline_model_config={},
     lhs_bounds=6

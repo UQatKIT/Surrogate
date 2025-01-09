@@ -124,8 +124,11 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
     while not server_available:
         try:
             print(f"Calling server {name} at {address}...")
+            print("Called from surrogate side")
+            sys.stdout.flush()
             ub_server = ub.HTTPModel(address, name)
             print("Server available\n")
+            sys.stdout.flush()
             server_available = True
         except:
             time.sleep(10)

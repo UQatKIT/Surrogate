@@ -9,7 +9,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 
 from . import utilities as utils
 
-
 # ==================================================================================================
 @dataclass
 class BaseSettings:
@@ -137,6 +136,7 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             optimized_kernel = self._gp_model.kernel_
             hyperparameters = optimized_kernel.get_params()
             self._gp_model.kernel.set_params(**hyperparameters)
+            print(self._gp_model.kernel.get_params())
 
     # ----------------------------------------------------------------------------------------------
     def predict_and_estimate_variance(self, parameters):
@@ -172,7 +172,10 @@ class SKLearnGPSurrogateModel(BaseSurrogateModel):
             self._min_output_data = np.min(self._training_output, axis=0)
             self._max_output_data = np.max(self._training_output, axis=0)
             self._gp_model.kernel.set_params(**checkpoint.hyperparameters)
+            print("reached",checkpoint_load_file)
+            #print(self._gp_model.kernel.get_params())
             self._gp_model.fit(self._training_input, self._training_output)
+            print(self._gp_model.kernel.get_params())
 
     # ----------------------------------------------------------------------------------------------
     def save_checkpoint(self, checkpoint_id):

@@ -7,6 +7,7 @@ import umbridge as ub
 
 from . import utilities as utils
 
+import sys
 
 # ==================================================================================================
 @dataclass
@@ -50,6 +51,8 @@ class SurrogateControl(ub.Model):
         self._surrogate_model = surrogate_model
         self._simulation_model = simulation_model
         self._input_sizes = simulation_model.get_input_sizes()
+        print('input size of surrogate',self._input_sizes)
+        sys.stdout.flush()
         self._output_sizes = [simulation_model.get_output_sizes()[0], 1, 1]
 
         self._num_saved_checkpoints = 0

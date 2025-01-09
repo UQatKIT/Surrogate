@@ -17,6 +17,7 @@ from botorch.models.gp_regression import SingleTaskGP
 from botorch.models.transforms.input import Normalize
 from botorch.models.transforms.outcome import Standardize
 
+import sys
 
 class Surrogate(umbridge.Model):
 
@@ -33,6 +34,8 @@ class Surrogate(umbridge.Model):
         # Get the input and output size from the UM-Bridge Model
         self.input_size = self.umbridge_model.get_input_sizes(None)
         self.output_size = self.umbridge_model.get_output_sizes(None)
+        print(self.input_size)
+        sys.stdout.flush()
 
         ## True => no fitting / False => fitting
         self.custom_hyperparameters = config["custom_hyperparameters"]

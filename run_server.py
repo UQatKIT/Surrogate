@@ -6,7 +6,7 @@ import umbridge as ub
 import src.surrogate.surrogate_control as surrogate_control
 import src.surrogate.utilities as utils
 
-
+import sys
 # ==================================================================================================
 def process_cli_arguments():
     argParser = argparse.ArgumentParser(
@@ -40,6 +40,9 @@ def main():
         settings_module.simulation_model_settings.url,
         settings_module.simulation_model_settings.name,
     )
+    print(f"getting {settings_module.simulation_model_settings.name}")
+    print("input size of the simulation model",simulation_model.get_input_sizes())
+    sys.stdout.flush()
     control = surrogate_control.SurrogateControl(
         settings_module.surrogate_control_settings,
         settings_module.control_logger_settings,

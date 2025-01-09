@@ -74,9 +74,11 @@ class Visualizer:
         plt.close(fig)
 
     def _visualize_chackpoint_2D(self, pdf, name):
-        self._visualization_bounds[0]
-        param_1_values = np.linspace(*self._visualization_bounds[0], 100)
-        param_2_values = np.linspace(*self._visualization_bounds[0], 100)
+        # self._visualization_bounds[0]
+        lower_bounds = [bound[0] for bound in self._visualization_bounds]
+        upper_bounds = [bound[1] for bound in self._visualization_bounds]
+        param_1_values = np.linspace(lower_bounds[0], upper_bounds[0], 100)
+        param_2_values = np.linspace(lower_bounds[1], upper_bounds[1], 100)
         param_values = np.column_stack(
             (np.repeat(param_1_values, 100), np.tile(param_2_values, 100))
         )
@@ -114,7 +116,9 @@ class Visualizer:
         if self._param_dim == 2:
             training_data = self._test_surrogate.training_data[0]
         else:
-            training_data = None
+            # training_data = None
+            print("shape: ", self._test_surrogate.training_data[0].shape)
+            training_data = self._test_surrogate.training_data[0]
 
         fig_mean, axs_mean = plt.subplots(
             nrows=self._param_dim - 1,
@@ -134,11 +138,11 @@ class Visualizer:
             for j in range(0, self._param_dim - 1 - i):
                 ind_comb = structured_ind_combs[i][j]
                 param_values, mean, std = self._evaluate_2D_marginal(*ind_comb)
-                self._visualize_2D(axs_mean[i, j], ind_comb, param_values, mean, training_data)
-                self._visualize_2D(axs_std[i, j], ind_comb, param_values, std, training_data)
+                self._visualize_2D(axs_mean[i, i+j], ind_comb, param_values, mean, training_data)
+                self._visualize_2D(axs_std[i, i+j], ind_comb, param_values, std, training_data)
             for j in range(self._param_dim - 1 - i, self._param_dim - 1):
-                axs_mean[i, j].remove()
-                axs_std[i, j].remove()
+                axs_mean[i, self._param_dim - 2 - j].remove()
+                axs_std[i, self._param_dim - 2 - j].remove()
         pdf.savefig(fig_mean)
         pdf.savefig(fig_std)
         plt.close(fig_mean)
@@ -147,7 +151,7 @@ class Visualizer:
     # ----------------------------------------------------------------------------------------------
     def _visualize_1D(self, ax, ind, param_values, mean, std, training_data=None):
         ax.plot(param_values, mean)
-        ax.fill_between(param_values, mean - 1.96 * std, mean + 1.96 * std, alpha=0.2)
+        ax.fill_between(param_values, mean - 1.96e-1 * std, mean + 1.96e-1 * std, alpha=0.2)
         ax.set_xlabel(rf"$\theta_{ind}$")
         if training_data is not None:
             input_training = training_data[0]
@@ -156,11 +160,17 @@ class Visualizer:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_2D(self, ax, ind_comb, param_values, solution_values, training_data=None):
-        ax.contourf(*param_values, solution_values, levels=10, cmap="Blues")
+        ax.contourf(param_values[1], param_values[0], solution_values, levels=30, cmap="Blues")
+        training_output = self._test_surrogate.training_data[1]
         if training_data is not None:
-            ax.scatter(training_data[:, 0], training_data[:, 1], marker="x", color="red")
-        ax.set_xlabel(rf"$\theta_{ind_comb[0]}$")
-        ax.set_ylabel(rf"$\theta_{ind_comb[1]}$")
+            x_coords = training_data[:, ind_comb[1]]  # Second index in ind_comb
+            y_coords = training_data[:, ind_comb[0]]  # First index in ind_comb
+            for x, y, output in zip(x_coords, y_coords, training_output):
+                # print(output.size)
+                ax.text(x, y, f"{output[0]:.2f}", fontsize=10, ha='right', color='k')
+            ax.scatter(training_data[:, ind_comb[1]], training_data[:, ind_comb[0]], marker="o", alpha=np.sqrt(training_output**3), color="red")
+        ax.set_xlabel(rf"$\theta_{ind_comb[1]}$")
+        ax.set_ylabel(rf"$\theta_{ind_comb[0]}$")
 
     # ----------------------------------------------------------------------------------------------
     def _evaluate_1D_marginal(self, param_ind):
