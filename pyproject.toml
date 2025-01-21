@@ -1,14 +1,24 @@
 [project]
-name = "surrogate"
-version = "1.0.0"
-description = "Umbridge service for a greedy, asynchronous surrogate model"
-readme = "README.md"
 authors = [
     {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
     {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
 ]
-license = {text = "MIT"}
+maintainers = [{ name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu" }]
+name = "surrogate"
+description = "Umbridge service for a greedy, asynchronous surrogate model"
+readme = "README.md"
+dynamic = ["version"]
 requires-python = ">=3.12"
+keywords = ["surrogate-model", "multi-fidelity", "Gaussian Process Regression", "Online Learning"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Operating System :: POSIX :: Linux",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+]
+urls = { repository = "https://github.com/UQatKIT/surrogate" }
+
+# --------------------------------------------------------------------------------------------------
 dependencies = [
     "numpy>=2.2.0",
     "scikit-learn>=1.6.0",
@@ -16,9 +26,14 @@ dependencies = [
     "umbridge>=1.2.4",
 ]
 
-[project.optional-dependencies]
-development = [
+[dependency-groups]
+dev = [
     "ruff>=0.8.2",
+]
+docs = [
+  "mkdocs-material>=9.5.49",
+  "mkdocs-autorefs>=1.2.0",
+  "mkdocstrings[python]>=0.27.0",
 ]
 notebook = [
     "jupyter>=1.1.1",
@@ -29,14 +44,42 @@ postprocessing = [
     "seaborn>=0.13.2",
 ]
 
+# --------------------------------------------------------------------------------------------------
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+source = "vcs"
+
+[tool.uv]
+environments = ["sys_platform == 'linux'"]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { git = { commit = true, tags = true } },
+]
+
+# --------------------------------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["EM101", "EM102", "TRY003", "COM812", "RET504", "S101", "PD008"]
+ignore = [
+  "COM812",
+  "EM101",
+  "EM102",
+  "FBT001",
+  "FBT003",
+  "F722",
+  "F821",
+  "ISC001",
+  "PD008",
+  "PD011",
+  "PLR2004",
+  "PT003",
+  "RET504",
+  "S101",
+  "TRY003",
+]
 pydocstyle.convention = "google"

@@ -278,7 +278,7 @@ class Visualizer:
             param_values (tuple[np.ndarray, np.ndarray]): x-values
             solution_values (np.ndarray): y-values (mean or std)
             training_data (tuple[np.ndarray, np.ndarray] | None, optional):
-            Input and output data for the surrogate training. Defaults to None.. Defaults to None.
+                Input and output data for the surrogate training. Defaults to None.
         """
         ax.contourf(*param_values, solution_values, levels=10, cmap="Blues")
         if training_data is not None:

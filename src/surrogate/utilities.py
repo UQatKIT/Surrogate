@@ -232,7 +232,7 @@ def request_umbridge_server(address: str, name: str) -> ub.HTTPModel:
 
 
 # --------------------------------------------------------------------------------------------------
-def process_mean_std(surrogate: Any, params: np.ndarray):
+def process_mean_std(surrogate: Any, params: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Get the mean an reference of a surrogate for a given input parameter array.
 
     Variance can either be absolute or relative, depending on the configuration of the surrogate.
