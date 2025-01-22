@@ -46,6 +46,7 @@ class BaseSettings:
         checkpoint_save_path (Path): File to save new checkpoint to, automatically appended by an
             integer id.
     """
+
     minimum_num_training_points: int
     perform_log_transform: bool
     variance_is_relative: bool
@@ -70,6 +71,7 @@ class SKLearnGPSettings(BaseSettings):
         normalize_output (bool): Normalize the regressor prediction within scikit-learn.
         init_seed (int): Seed for initialization of the optimizer.
     """
+
     scaling_kernel: Any
     correlation_kernel: Any
     data_noise: float
@@ -87,6 +89,7 @@ class SKLearnGPCheckpoint:
         output_data (np.ndarray): Output training data.
         hyperparameters (dict[str, Any]): Hyperparameters of the trained surrogate.
     """
+
     input_data: np.ndarray
     output_data: np.ndarray
     hyperparameters: dict[str, Any]
@@ -150,7 +153,7 @@ class BaseSurrogateModel:
     ) -> tuple[np.ndarray, np.ndarray]:
         """Predict output (mean and variance) for a given parameter set.
 
-        Variance may be normalized by the range of the training data or a provided reference in 
+        Variance may be normalized by the range of the training data or a provided reference in
         specific implementations.
 
         Args:

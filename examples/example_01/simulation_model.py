@@ -55,7 +55,6 @@ class GaussianDensity1D(ub.Model):
     def __call__(
         self, parameters: list[list[float]], _config: dict[str, Any] = {}
     ) -> list[list[float]]:
-
         state_diff = parameters[0][0] - self._mean
         log_likelihood = -0.5 * state_diff**2 / self._covariance
         return [[log_likelihood]]

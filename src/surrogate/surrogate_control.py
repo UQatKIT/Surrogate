@@ -37,6 +37,7 @@ class ControlSettings:
         overwrite_checkpoint (bool, optional): Whether to overwrite checkpoints. If not, the
             checkpoint names are ID-ed with increasing numbers. Defaults to True.
     """
+
     port: str
     name: str
     minimum_num_training_points: int
@@ -58,6 +59,7 @@ class CallInfo:
         surrogate_used (bool): Whether surrogate has been used for prediction
         num_training_points (int): Overall number of training points generated so far
     """
+
     parameters: list
     surrogate_result: np.ndarray
     simulation_result: list
@@ -78,6 +80,7 @@ class UpdateInfo:
         correlation_length (float | np.ndarray): Correlation length per dimension parameter of the
             trained surrogate kernel (for GPs)
     """
+
     new_fit: bool
     num_updates: int
     next_update: int

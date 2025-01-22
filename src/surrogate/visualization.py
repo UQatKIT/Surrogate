@@ -28,6 +28,7 @@ class VisualizationSettings:
         visualization_bounds (list[list[float, float]]): Bounds for plotting in each dimension
         rng_seed (int): Seed for RNG used during marginalization
     """
+
     offline_checkpoint_file: Path
     online_checkpoint_filestub: Path
     visualization_file: Path

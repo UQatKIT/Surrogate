@@ -1,4 +1,5 @@
 """Minimal Test Client for testing an active control server."""
+
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
@@ -19,6 +20,7 @@ class TestClientSettings:
         simulation_config: dict[Any]: Configuration argument for the call to the control servers
         training_params: np.ndarray: Parameters to request evaluation for
     """
+
     control_url: str
     control_name: str
     simulation_config: dict[Any]

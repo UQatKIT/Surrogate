@@ -5,6 +5,7 @@ Classes:
     OfflineTrainer: Class for pretraining of surrogate models.
     OfflineTrainingLogger: Logger for information during pretraining.
 """
+
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -31,6 +32,7 @@ class OfflineTrainingSettings:
         lhs_seed: Seed for the Latin Hypercube Sampling.
         checkpoint_save_name: Name of the checkpoint file to save the surrogate model and data to.
     """
+
     num_offline_training_points: int
     num_threads: int
     offline_model_config: dict

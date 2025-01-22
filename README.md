@@ -1,3 +1,7 @@
+![Docs](https://img.shields.io/github/actions/workflow/status/UQatKIT/surrogate/docs.yaml?label=Docs)
+![Python Version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FUQatKIT%2Fsurrogate%2Fmain%2Fpyproject.toml)
+![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
+
 # Asynchronous Greedy Surrogate Client
 
 > [!IMPORTANT]
@@ -11,7 +15,7 @@ The described approach is particularly useful for multilevel-type algorithms. We
 
 The library in this repository is a Python package readily installable via `pip`, simply run
 ```bash
-python pip install .
+pip install .
 ```
 For development, we recommend using the great [uv](https://docs.astral.sh/uv/) project management tool, for which we provide a universal lock file. To set up a reproducible environment, run 
 ```bash

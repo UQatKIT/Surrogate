@@ -60,7 +60,7 @@ pretraining_settings = offline_training.OfflineTrainingSettings(
     num_offline_training_points=5,
     num_threads=5,
     offline_model_config={},
-    lhs_bounds=[[-1, 1]],
+    lhs_bounds=[[-2, 2]],
     lhs_seed=0,
     checkpoint_save_name="pretraining",
 )
@@ -76,7 +76,7 @@ test_client_settings = test_client.TestClientSettings(
     control_url="http://localhost:4243",
     control_name="surrogate",
     simulation_config={},
-    training_params=np.random.uniform(-1, 1, 10),
+    training_params=np.random.uniform(-2, 2, 10),
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -85,6 +85,6 @@ visualization_settings = visualization.VisualizationSettings(
     online_checkpoint_filestub=Path(f"{result_directory}/surrogate_checkpoint"),
     visualization_file=Path(f"{result_directory}/visualization.pdf"),
     visualization_bounds=[
-        [-1, 1],
+        [-2, 2],
     ],
 )
