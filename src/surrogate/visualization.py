@@ -81,7 +81,7 @@ class Visualizer:
         parameter space.
         - 1D: Visualize mean and std in one plot, equipped with training data
         - 2D: Visualize mean and std in separate plots, training data is shown in mean plot
-        - ND: Visualize 1D and 2D marginals, with mean and std, training data is not shown
+        - AND: Visualize 1D and 2D marginals, with mean and std, training data is not shown
         """
         if self._visualization_file is not None:
             if not self._visualization_file.parent.is_dir():
@@ -119,7 +119,7 @@ class Visualizer:
         elif self._param_dim == 2:
             self._visualize_checkpoint_2D(pdf_file, name)
         else:
-            self._visualize_checkpoint_ND(pdf_file, name)
+            self._visualize_checkpoint_AND(pdf_file, name)
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_checkpoint_1D(self, pdf: PdfPages, name: str) -> None:
@@ -172,8 +172,8 @@ class Visualizer:
         plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_checkpoint_ND(self, pdf: PdfPages, name: str) -> None:
-        """Visualize a checkpoint for ND parameter space.
+    def _visualize_checkpoint_AND(self, pdf: PdfPages, name: str) -> None:
+        """Visualize a checkpoint for AND parameter space.
 
         This method is invoked for cases with D > 2 dimensional parameter space. It generals plots
         for all 1D marginals, as well as 2D marginals for all possible parameter tuples. Marginals

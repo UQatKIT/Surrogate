@@ -355,7 +355,7 @@ class SurrogateLogger(utilities.BaseLogger):
         header_str = (
             "Explanation of abbreviations:\n\n"
             "Par: Input parameters\n"
-            "Sur: Surrogate result (mean)\n"
+            "Sure: Surrogate result (mean)\n"
             "Sim: Simulation result\n"
             "Var: Surrogate Variance (0 if not called)\n"
             "SU: If surrogate was used for output\n"
@@ -392,7 +392,7 @@ class SurrogateLogger(utilities.BaseLogger):
             output_str = (
                 "[call] "
                 f"Par: {parameter_str} | "
-                f"Sur: {surrogate_result_str} | "
+                f"Sure: {surrogate_result_str} | "
                 f"Sim: {simulation_result_str} | "
                 f"Var: {variance_str} | "
                 f"SU: {call_info.surrogate_used!s:<5} | "
