@@ -1,5 +1,5 @@
-![Docs](https://img.shields.io/github/actions/workflow/status/UQatKIT/surrogate/docs.yaml?label=Docs)
-![Python Version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FUQatKIT%2Fsurrogate%2Fmain%2Fpyproject.toml)
+![Docs](https://img.shields.io/github/actions/workflow/status/UQatKIT/Surrogate/docs.yaml?label=Docs)
+![Python Version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FUQatKIT%2FSurrogate%2Fmain%2Fpyproject.toml)
 ![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
 
 # Asynchronous Greedy Surrogate Client
