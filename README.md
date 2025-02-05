@@ -24,7 +24,7 @@ uv sync --all-groups
 
 ## Usage
 
-The [documentation](https://uqatkit.github.io/surrogate/) provides further information regarding usage, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/surrogate/tree/main/examples).
+The [documentation](https://uqatkit.github.io/Surrogate/) provides further information regarding usage, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/surrogate/tree/main/examples).
 
 ## License
 
