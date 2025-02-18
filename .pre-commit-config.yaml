@@ -23,9 +23,3 @@ repos:
     rev: 0.31.0
     hooks:
       - id: check-github-workflows
-
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.29.4
-    hooks:
-      - id: typos
-        args: []
